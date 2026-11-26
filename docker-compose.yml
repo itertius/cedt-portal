@@ -1,0 +1,22 @@
+# Local development services. Run: docker compose up -d
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cedt
+      # Local-only database: no password, reachable from this machine only.
+      POSTGRES_HOST_AUTH_METHOD: trust
+      POSTGRES_DB: cedt_hub
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cedt -d cedt_hub"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  pgdata:
