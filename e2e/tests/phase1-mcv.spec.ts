@@ -77,10 +77,7 @@ test.describe("Phase 1 · MCV sync + dashboard", () => {
       ["CEDT-ICES", "https://cedt-ices.com/login"],
     ];
     for (const [name, href] of expected) {
-      await expect(apps.getByRole("link", { name: new RegExp(name) })).toHaveAttribute(
-        "href",
-        href,
-      );
+      await expect(apps.getByRole("link", { name })).toHaveAttribute("href", href);
     }
   });
 
