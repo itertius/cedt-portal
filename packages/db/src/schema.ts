@@ -178,6 +178,29 @@ export const event = pgTable(
   ],
 );
 
+/** Markdown notes, optionally linked to a course or a calendar event. */
+export const note = pgTable(
+  "note",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    title: text("title").notNull().default(""),
+    body: text("body").notNull().default(""),
+    courseId: uuid("course_id").references(() => course.id, { onDelete: "set null" }),
+    eventId: uuid("event_id").references(() => event.id, { onDelete: "set null" }),
+    pinned: boolean("pinned").notNull().default(false),
+    ...timestamps,
+  },
+  (t) => [
+    index("note_user_updated_idx").on(t.userId, t.updatedAt),
+    // Substring search via pg_trgm (migration 0004 creates the extension).
+    index("note_title_trgm_idx").using("gin", t.title.op("gin_trgm_ops")),
+    index("note_body_trgm_idx").using("gin", t.body.op("gin_trgm_ops")),
+  ],
+);
+
 export const syncState = pgTable(
   "sync_state",
   {
