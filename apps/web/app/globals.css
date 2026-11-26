@@ -134,3 +134,10 @@ body {
 a {
   color: inherit;
 }
+
+.apps li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem;
+}

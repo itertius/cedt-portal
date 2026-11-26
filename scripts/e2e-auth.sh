@@ -55,7 +55,10 @@ grep -q 'Reading: series' <<<"$HOME_HTML" || fail "undated task missing"
 grep -q 'Old term HW' <<<"$HOME_HTML" && fail "old-term assignment should not be synced"
 grep -q 'Computer Engineering Essentials' <<<"$HOME_HTML" || fail "current course missing"
 grep -q 'courseville/worksheet/1001/50001' <<<"$HOME_HTML" || fail "assignment deep link missing"
-pass "background sync fills the dashboard"
+for url in cedt-grader.nattee.net talent.cedt.community cedtintern.cp.eng.chula.ac.th nisitez.siamcodex.com cedt-ices.com; do
+  grep -q "https://$url" <<<"$HOME_HTML" || fail "launcher link missing: $url"
+done
+pass "background sync fills the dashboard and the launcher lists every platform"
 
 [[ $(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/cron/sync") == 401 ]] || fail "cron without secret"
 CRON=$(curl -s -H 'Authorization: Bearer e2e-cron' "$BASE/api/cron/sync")
