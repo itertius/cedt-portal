@@ -57,11 +57,20 @@ In `apps/web/.env.local` set `MCV_BASE_URL=http://localhost:4010` and any non-em
 `MCV_CLIENT_ID` / `MCV_CLIENT_SECRET`. "Log in with MyCourseVille" then signs you in as a fake
 student.
 
+### Google Calendar without a Google account
+
+```sh
+node apps/web/scripts/mock-google.mjs   # http://localhost:4020
+```
+
+Set `GOOGLE_BASE_URL=http://localhost:4020` and any non-empty `GOOGLE_CLIENT_ID` /
+`GOOGLE_CLIENT_SECRET`, then use Settings → Connect Google Calendar.
+
 ### Tests
 
 ```sh
 pnpm test                                       # unit tests (Vitest)
-pnpm build && ./scripts/e2e-auth.sh             # login flow end to end (needs DATABASE_URL)
+pnpm build && ./scripts/e2e-auth.sh             # full e2e (needs a FRESH migrated DATABASE_URL)
 ```
 
 ### Database changes

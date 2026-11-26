@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { getSession } from "@/lib/auth";
 import { createEvent, deleteEvent, parseEventForm, updateEvent } from "@/lib/calendar/events";
 import { dateKeyOf } from "@/lib/calendar/time";
+import { deleteGoogleCopy, syncGcal } from "@/lib/sync/gcal";
 
 export interface EventFormState {
   errors?: Record<string, string>;
@@ -36,6 +38,9 @@ export async function saveEventAction(
   } else {
     await createEvent(session.user.id, parsed.data);
   }
+  const userId = session.user.id;
+  // Push the change to Google Calendar (if connected) after the response is sent.
+  after(() => syncGcal(userId, { force: true }));
   revalidatePath("/calendar");
   redirect(`/calendar?date=${dateKeyOf(parsed.data.startsAt)}`);
 }
@@ -45,7 +50,14 @@ export async function deleteEventAction(form: FormData) {
   if (!session) redirect("/login");
   const id = form.get("id");
   const date = form.get("date");
-  if (typeof id === "string") await deleteEvent(session.user.id, id);
+  const userId = session.user.id;
+  if (typeof id === "string") {
+    const deleted = await deleteEvent(userId, id);
+    if (deleted && deleted.remoteId !== null) {
+      const remoteId = deleted.remoteId;
+      after(() => deleteGoogleCopy(userId, remoteId));
+    }
+  }
   revalidatePath("/calendar");
   redirect(typeof date === "string" && date ? `/calendar?date=${date}` : "/calendar");
 }

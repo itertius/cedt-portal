@@ -163,6 +163,13 @@ export const event = pgTable(
     endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
     allDay: boolean("all_day").notNull().default(false),
     url: text("url"),
+    // Two-way Google sync for hub-created events.
+    /** Google event id once this hub event has been pushed. */
+    remoteId: text("remote_id"),
+    /** Google's `updated` value after our last push/pull; a different value means it was edited there. */
+    remoteUpdated: text("remote_updated"),
+    /** When we last pushed this event. If updatedAt is newer, it has local changes to push. */
+    pushedAt: timestamp("pushed_at", { withTimezone: true }),
     ...timestamps,
   },
   (t) => [

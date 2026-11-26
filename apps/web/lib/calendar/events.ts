@@ -116,13 +116,17 @@ export async function updateEvent(userId: string, id: string, input: EventInput)
   return rows.length > 0;
 }
 
-export async function deleteEvent(userId: string, id: string) {
+/** Deletes a hub event the user owns. Returns its Google copy's id (if any), or false. */
+export async function deleteEvent(
+  userId: string,
+  id: string,
+): Promise<false | { remoteId: string | null }> {
   if (!isUuid(id)) return false;
-  const rows = await getDb()
+  const [row] = await getDb()
     .delete(event)
     .where(and(eq(event.id, id), eq(event.userId, userId), eq(event.source, "hub")))
-    .returning({ id: event.id });
-  return rows.length > 0;
+    .returning({ remoteId: event.remoteId });
+  return row ? { remoteId: row.remoteId } : false;
 }
 
 export async function getEvent(userId: string, id: string) {
