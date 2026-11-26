@@ -136,7 +136,18 @@ interface Connector {
 
 ## Verification
 
-- `pnpm dev`, then log in through MCV (with a sandbox client id) and see your own courses/assignments on the dashboard.
-- `pnpm test` runs Vitest connector normalizers against fixtures. `pnpm e2e` runs Playwright: login stub, dashboard render, task deep link.
-- `docker compose up` runs the full stack locally, which proves portability to the club server.
-- Deploy a Vercel preview, point the `hub.` CNAME at it, check HTTPS and the OAuth callback on the real domain.
+Testing strategy and the phase gate live in [TESTING.md](TESTING.md). In short:
+
+- **Every phase ends with a Playwright spec** (`e2e/tests/phaseN-*.spec.ts`) that covers the
+  phase's acceptance items in a real browser against mock MCV and mock Google. The phase is not
+  complete until that spec, and every earlier one, passes in CI.
+- Unit and database tests (Vitest, real Postgres) cover the rules underneath: normalizers, date
+  math, sync conflicts, and ownership between users.
+- Real-account checks (live MCV, live Google) are a manual checklist before each `dev` → `master`
+  release.
+
+```sh
+docker compose down -v && POSTGRES_PORT=5433 docker compose up -d --wait
+export DATABASE_URL=postgres://cedt@localhost:5433/cedt_hub
+pnpm db:migrate && pnpm test && pnpm build && pnpm e2e
+```
