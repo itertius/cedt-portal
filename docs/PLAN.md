@@ -13,12 +13,12 @@ CEDT students juggle many separate platforms: MyCourseVille (MCV), Talent Journe
 
 | Platform                       | Likely access                                        | Strategy                                                                                                       |
 | ------------------------------ | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| MyCourseVille                  | Official OAuth2 + REST API (used in CEDT courses)    | **Login provider + API sync** (courses, assignments, announcements). Needs an MCV client_id from the CV team   |
+| [MyCourseVille](https://www.mycourseville.com/?q=courseville&type=course&role=all) | Official OAuth2 + REST API (used in CEDT courses)    | **Login provider + API sync** (courses, assignments, announcements). Needs an MCV client_id from the CV team   |
 | Chula SSO                      | Chula IT SSO, or Microsoft Entra (Chula M365 tenant) | **Login provider** via OIDC. Needs app registration or tenant consent from Chula IT. Until then, use MCV login |
-| CEDT Grader                    | Web app, no public API                               | Deep link + browser-extension sync (problem list, scores)                                                      |
-| Talent Journey / Intern Portal | Web app, no public API                               | Deep link + extension sync (applications, status). Use an iCal/email parse fallback where it exists            |
-| Nisitez                        | Web app, no public API                               | Deep link + extension sync                                                                                     |
-| CEDT-ICES                      | Web app (evaluations)                                | Deep link + "pending evaluation" reminder (extension or manual)                                                |
+| [CEDT Grader](https://cedt-grader.nattee.net/main/list) | Web app, no public API                               | Deep link + browser-extension sync (problem list, scores)                                                      |
+| [Talent Journey](https://talent.cedt.community/) / [Intern Portal](https://cedtintern.cp.eng.chula.ac.th/) | Web app, no public API                               | Deep link + extension sync (applications, status). Use an iCal/email parse fallback where it exists            |
+| [Nisitez](https://nisitez.siamcodex.com/login) | Web app, no public API                               | Deep link + extension sync                                                                                     |
+| [CEDT-ICES](https://cedt-ices.com/login) | Web app (evaluations)                                | Deep link + "pending evaluation" reminder (extension or manual)                                                |
 | Google Calendar / Outlook      | Official OAuth                                       | Two-way calendar sync                                                                                          |
 
 Rules:
