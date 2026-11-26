@@ -1,4 +1,4 @@
-import { mcvLinks } from "@cedt-hub/connectors/mcv";
+import { PLATFORMS } from "@cedt-hub/connectors";
 import type { getDashboard } from "@/lib/dashboard";
 import { formatDue, relative } from "@/lib/format";
 import { SyncButton, TaskCheckbox } from "./dashboard-client";
@@ -123,13 +123,16 @@ export function Dashboard({ name, data }: { name: string; data: Data }) {
       <section className="card">
         <h2>Apps</h2>
         <ul className="apps">
-          <li>
-            <a href={mcvLinks.courses} target="_blank" rel="noreferrer">
-              MyCourseVille ↗
-            </a>
-          </li>
+          {PLATFORMS.map((p) => (
+            <li key={p.id}>
+              <a href={p.url} target="_blank" rel="noreferrer">
+                <strong>{p.name}</strong> ↗
+              </a>
+              <span className="muted"> · {p.description}</span>
+              {p.integration === "sync" ? <span className="tag">synced</span> : null}
+            </li>
+          ))}
         </ul>
-        <p className="muted">Grader, Talent Journey, Intern Portal, Nisitez and ICES are coming.</p>
       </section>
     </div>
   );
