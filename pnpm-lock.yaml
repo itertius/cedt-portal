@@ -17,15 +17,15 @@ importers:
 
   apps/web:
     dependencies:
+      '@cedt-hub/connectors':
+        specifier: workspace:*
+        version: link:../../packages/connectors
       '@cedt-hub/db':
         specifier: workspace:*
         version: link:../../packages/db
       better-auth:
         specifier: 1.7.28
         version: 1.7.28(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(kysely@0.29.9)(postgres@4.1.1))(next@16.4.6(@types/node@24.19.4)(react-dom@19.3.1(react@19.3.1))(react@19.3.1))(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(vitest@5.1.2(@types/node@24.19.4)(vite@8.3.8(@types/node@24.19.4)(esbuild@0.28.2)(tsx@4.23.15)))
-      drizzle-orm:
-        specifier: 0.45.4
-        version: 0.45.4(kysely@0.29.9)(postgres@4.1.1)
       next:
         specifier: 16.4.6
         version: 16.4.6(@types/node@24.19.4)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)
@@ -48,6 +48,18 @@ importers:
       '@types/react-dom':
         specifier: ^19.2.0
         version: 19.3.0(@types/react@19.3.3)
+      typescript:
+        specifier: ^5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: 5.1.2
+        version: 5.1.2(@types/node@24.19.4)(vite@8.3.8(@types/node@24.19.4)(esbuild@0.28.2)(tsx@4.23.15))
+
+  packages/connectors:
+    devDependencies:
+      '@types/node':
+        specifier: ^24.19.4
+        version: 24.19.4
       typescript:
         specifier: ^5.9.3
         version: 5.9.3

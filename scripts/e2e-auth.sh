@@ -8,7 +8,7 @@ PORT=${E2E_PORT:-3100}
 BASE="http://localhost:$PORT"
 JAR=$(mktemp)
 export BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-$(openssl rand -base64 32)}
-export BETTER_AUTH_URL=$BASE MCV_CLIENT_ID=e2e MCV_CLIENT_SECRET=e2e MCV_BASE_URL=http://localhost:4010
+export BETTER_AUTH_URL=$BASE MCV_CLIENT_ID=e2e MCV_CLIENT_SECRET=e2e MCV_BASE_URL=http://localhost:4010 CRON_SECRET=e2e-cron
 : "${DATABASE_URL:?DATABASE_URL must point at a migrated database}"
 
 node apps/web/scripts/mock-mcv.mjs >/dev/null & MOCK=$!
@@ -39,8 +39,28 @@ SESSION=$(curl -s -b "$JAR" "$BASE/api/auth/get-session")
 [[ $SESSION == *'"name":"Test Student"'* && $SESSION == *'mcv-6530000021@mcv.invalid'* ]] || fail "session: $SESSION"
 pass "session has the MCV profile"
 
-curl -s -b "$JAR" "$BASE/" | grep -q 'Logged in as <strong>Test Student' || fail "home does not show the user"
-pass "logged-in home"
+curl -s -b "$JAR" "$BASE/" | grep -q 'Hi, <!-- -->Test Student' || fail "dashboard does not greet the user"
+pass "logged-in dashboard"
+
+# The first dashboard view starts a background MCV sync; wait for it to land.
+for _ in $(seq 1 20); do
+  HOME_HTML=$(curl -s -b "$JAR" "$BASE/")
+  grep -q 'Lab 5: OAuth' <<<"$HOME_HTML" && break
+  sleep 1
+done
+grep -q 'Lab 5: OAuth' <<<"$HOME_HTML" || fail "synced assignment missing from dashboard"
+grep -q 'Problem set 3' <<<"$HOME_HTML" || fail "second course assignment missing"
+grep -q 'Overdue' <<<"$HOME_HTML" && grep -q 'Project proposal' <<<"$HOME_HTML" || fail "overdue section missing"
+grep -q 'Reading: series' <<<"$HOME_HTML" || fail "undated task missing"
+grep -q 'Old term HW' <<<"$HOME_HTML" && fail "old-term assignment should not be synced"
+grep -q 'Computer Engineering Essentials' <<<"$HOME_HTML" || fail "current course missing"
+grep -q 'courseville/worksheet/1001/50001' <<<"$HOME_HTML" || fail "assignment deep link missing"
+pass "background sync fills the dashboard"
+
+[[ $(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/cron/sync") == 401 ]] || fail "cron without secret"
+CRON=$(curl -s -H 'Authorization: Bearer e2e-cron' "$BASE/api/cron/sync")
+[[ $CRON == *'"users":'* && $CRON != *'"error":1'* ]] || fail "cron: $CRON"
+pass "cron endpoint is protected and runs ($CRON)"
 
 curl -s -o /dev/null -b "$JAR" -c "$JAR" -H "Origin: $BASE" -H 'Content-Type: application/json' \
   -X POST "$BASE/api/auth/sign-out" -d '{}'

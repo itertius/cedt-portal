@@ -1,10 +1,11 @@
 import "server-only";
-import { createDb, schema } from "@cedt-hub/db";
+import { schema } from "@cedt-hub/db";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { genericOAuth } from "better-auth/plugins/generic-oauth";
 import { headers } from "next/headers";
+import { getDb } from "./db";
 import { fetchMcvProfile, MCV_PROVIDER_ID, MCV_URLS } from "./mcv/profile";
 
 function baseURL(): string | undefined {
@@ -19,12 +20,12 @@ export const mcvEnabled = Boolean(process.env.MCV_CLIENT_ID && process.env.MCV_C
 /** Auth needs a database and a secret. Without them the site still renders, logged out. */
 export const authConfigured = Boolean(process.env.DATABASE_URL && process.env.BETTER_AUTH_SECRET);
 
-function createAuth(databaseUrl: string) {
+function createAuth() {
   return betterAuth({
     appName: "CEDT Hub",
     baseURL: baseURL(),
     secret: process.env.BETTER_AUTH_SECRET,
-    database: drizzleAdapter(createDb(databaseUrl), { provider: "pg", schema }),
+    database: drizzleAdapter(getDb(), { provider: "pg", schema }),
     account: {
       encryptOAuthTokens: true,
       // MCV emails are unverified placeholders; never link accounts by email.
@@ -63,7 +64,7 @@ let cached: Auth | null | undefined;
 
 export function getAuth(): Auth | null {
   if (cached !== undefined) return cached;
-  cached = authConfigured ? createAuth(process.env.DATABASE_URL as string) : null;
+  cached = authConfigured ? createAuth() : null;
   return cached;
 }
 

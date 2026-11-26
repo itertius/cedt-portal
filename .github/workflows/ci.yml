@@ -40,7 +40,6 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm lint:ci
       - run: pnpm typecheck
-      - run: pnpm test
       - name: Migrations are up to date with the schema
         run: |
           pnpm --filter @cedt-hub/db exec drizzle-kit generate --name ci-check
@@ -49,6 +48,7 @@ jobs:
           test -z "$(git status --porcelain packages/db/migrations)" || {
             echo "::error::Schema changed without a migration. Run pnpm db:generate."; exit 1; }
       - run: pnpm db:migrate
+      - run: pnpm test
       - run: pnpm build
       - name: End-to-end login (mock MCV)
         run: ./scripts/e2e-auth.sh
