@@ -1,4 +1,15 @@
-import { boolean, index, pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
+import {
+  boolean,
+  index,
+  integer,
+  pgEnum,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  uniqueIndex,
+  uuid,
+} from "drizzle-orm/pg-core";
 
 const timestamps = {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -70,4 +81,79 @@ export const verification = pgTable(
     ...timestamps,
   },
   (t) => [index("verification_identifier_idx").on(t.identifier)],
+);
+
+// ---- Normalized platform data -------------------------------------------------
+// Every connector (MCV today; Grader, Talent Journey, ... later) writes into these
+// tables. The dashboard and AI read only from here, never from platform APIs.
+
+export const sourceEnum = pgEnum("source", [
+  "mcv",
+  "grader",
+  "talent",
+  "intern",
+  "nisitez",
+  "ices",
+  "gcal",
+]);
+
+export const syncStatusEnum = pgEnum("sync_status", ["idle", "running", "error"]);
+
+export const course = pgTable(
+  "course",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    source: sourceEnum("source").notNull(),
+    sourceId: text("source_id").notNull(),
+    code: text("code"),
+    title: text("title").notNull(),
+    year: integer("year"),
+    semester: integer("semester"),
+    role: text("role"),
+    url: text("url"),
+    ...timestamps,
+  },
+  (t) => [uniqueIndex("course_user_source_idx").on(t.userId, t.source, t.sourceId)],
+);
+
+export const task = pgTable(
+  "task",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    source: sourceEnum("source").notNull(),
+    sourceId: text("source_id").notNull(),
+    courseId: uuid("course_id").references(() => course.id, { onDelete: "set null" }),
+    title: text("title").notNull(),
+    dueAt: timestamp("due_at", { withTimezone: true }),
+    url: text("url"),
+    // Owned by the user, never overwritten by a sync.
+    completedAt: timestamp("completed_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("task_user_source_idx").on(t.userId, t.source, t.sourceId),
+    index("task_user_due_idx").on(t.userId, t.dueAt),
+  ],
+);
+
+export const syncState = pgTable(
+  "sync_state",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    source: sourceEnum("source").notNull(),
+    status: syncStatusEnum("status").notNull().default("idle"),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    lastSyncedAt: timestamp("last_synced_at", { withTimezone: true }),
+    lastError: text("last_error"),
+    ...timestamps,
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.source] })],
 );

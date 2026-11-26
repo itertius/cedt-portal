@@ -12,6 +12,45 @@ const USER = {
   firstname_en: process.env.MOCK_MCV_FIRSTNAME ?? "Test",
   lastname_en: process.env.MOCK_MCV_LASTNAME ?? "Student",
 };
+const now = Math.floor(Date.now() / 1000);
+const DAY = 86400;
+const COURSES = [
+  {
+    cv_cid: 1001,
+    course_no: "2110101",
+    title: "Computer Engineering Essentials",
+    year: 2026,
+    semester: 2,
+    role: "student",
+  },
+  {
+    cv_cid: 1002,
+    course_no: "2301108",
+    title: "Calculus II",
+    year: 2026,
+    semester: 2,
+    role: "student",
+  },
+  {
+    cv_cid: 900,
+    course_no: "2301107",
+    title: "Calculus I",
+    year: 2026,
+    semester: 1,
+    role: "student",
+  },
+];
+const ASSIGNMENTS = {
+  1001: [
+    { itemid: 50001, cv_cid: 1001, title: "Lab 5: OAuth", duetime: now + 2 * DAY },
+    { itemid: 50002, cv_cid: 1001, title: "Project proposal", duetime: now - DAY },
+  ],
+  1002: [
+    { itemid: 60001, cv_cid: 1002, title: "Problem set 3", duetime: now + 5 * DAY },
+    { itemid: 60002, cv_cid: 1002, title: "Reading: series", duetime: 0 },
+  ],
+  900: [{ itemid: 40001, cv_cid: 900, title: "Old term HW", duetime: now - 120 * DAY }],
+};
 const codes = new Map();
 const tokens = new Set();
 
@@ -70,6 +109,23 @@ createServer(async (req, res) => {
     const token = req.headers.authorization?.replace(/^Bearer /, "");
     if (!token || !tokens.has(token)) return json(res, 401, { error: "invalid_token" });
     return json(res, 200, { user: USER });
+  }
+
+  const authed = () => {
+    const token = req.headers.authorization?.replace(/^Bearer /, "");
+    return Boolean(token && tokens.has(token));
+  };
+
+  if (req.method === "GET" && url.pathname === "/api/v1/public/get/user/courses") {
+    if (!authed()) return json(res, 401, { error: "invalid_token" });
+    return json(res, 200, { status: 200, data: { student: COURSES } });
+  }
+
+  if (req.method === "GET" && url.pathname === "/api/v1/public/get/course/assignments") {
+    if (!authed()) return json(res, 401, { error: "invalid_token" });
+    const list = ASSIGNMENTS[url.searchParams.get("cv_cid") ?? ""];
+    if (!list) return json(res, 404, { error: "course_not_found" });
+    return json(res, 200, { status: 200, data: list });
   }
 
   json(res, 404, { error: "not_found" });

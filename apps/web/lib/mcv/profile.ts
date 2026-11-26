@@ -1,18 +1,20 @@
+import { mcvUrls } from "@cedt-hub/connectors/mcv";
 import type { GenericOAuthUserInfo } from "better-auth/plugins/generic-oauth";
 
 export const MCV_PROVIDER_ID = "mcv";
 
-/** Override with MCV_BASE_URL to point at the local mock (scripts/mock-mcv.mjs). */
-const MCV_BASE_URL = (process.env.MCV_BASE_URL ?? "https://www.mycourseville.com").replace(
-  /\/$/,
-  "",
-);
-
+/** Resolved per call so MCV_BASE_URL (the local mock) can be set at runtime. */
 export const MCV_URLS = {
-  authorize: `${MCV_BASE_URL}/api/oauth/authorize`,
-  token: `${MCV_BASE_URL}/api/oauth/access_token`,
-  me: `${MCV_BASE_URL}/api/v1/public/users/me`,
-} as const;
+  get authorize() {
+    return mcvUrls().authorize;
+  },
+  get token() {
+    return mcvUrls().token;
+  },
+  get me() {
+    return mcvUrls().me;
+  },
+};
 
 /** Domain for placeholder emails. MCV returns no email; `.invalid` can never receive mail. */
 export const MCV_PLACEHOLDER_EMAIL_DOMAIN = "mcv.invalid";
