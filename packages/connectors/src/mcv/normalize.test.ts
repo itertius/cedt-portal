@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { mcvLinks } from "./api";
 import {
   currentTermCourses,
   normalizeAssignments,
@@ -92,5 +93,13 @@ describe("normalizeAssignments", () => {
         url: "https://www.mycourseville.com/?q=courseville/worksheet/101/8",
       },
     ]);
+  });
+});
+
+describe("mcvLinks", () => {
+  it("points the launcher at the all-courses page", () => {
+    expect(mcvLinks.courses).toBe(
+      "https://www.mycourseville.com/?q=courseville&type=course&role=all",
+    );
   });
 });

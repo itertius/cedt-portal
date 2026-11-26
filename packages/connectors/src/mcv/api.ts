@@ -17,6 +17,8 @@ export function mcvUrls(base = mcvBaseUrl()) {
 /** Links that open the item on mycourseville.com (always the real site, never the mock). */
 export const mcvLinks = {
   home: "https://www.mycourseville.com",
+  /** "My courses" list, all roles. */
+  courses: "https://www.mycourseville.com/?q=courseville&type=course&role=all",
   course: (cvCid: string) =>
     `https://www.mycourseville.com/?q=courseville/course/${encodeURIComponent(cvCid)}`,
   assignment: (cvCid: string, itemId: string) =>
