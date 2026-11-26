@@ -78,7 +78,7 @@ export class Client {
     for (const [k, v] of form.hidden) body.append(k, v);
     for (const [k, v] of Object.entries(fields)) body.append(k, v);
     const res = await this.request(path, { method: "POST", body });
-    return { status: res.status };
+    return { status: res.status, location: res.headers.get("location") };
   }
 }
 
