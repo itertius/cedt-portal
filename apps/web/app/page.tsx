@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { after } from "next/server";
+import { Nav } from "@/components/nav";
 import { getSession } from "@/lib/auth";
 import { getDashboard } from "@/lib/dashboard";
 import { commitSha, deployEnv } from "@/lib/env";
@@ -39,6 +40,7 @@ export default async function Home() {
 
   return (
     <main className="shell wide">
+      <Nav active="/" />
       <Dashboard name={session.user.name} data={data} />
       <div className="stack">
         <SignOutButton />

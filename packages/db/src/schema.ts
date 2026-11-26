@@ -89,6 +89,7 @@ export const verification = pgTable(
 
 export const sourceEnum = pgEnum("source", [
   "mcv",
+  "hub",
   "grader",
   "talent",
   "intern",
@@ -139,6 +140,34 @@ export const task = pgTable(
   (t) => [
     uniqueIndex("task_user_source_idx").on(t.userId, t.source, t.sourceId),
     index("task_user_due_idx").on(t.userId, t.dueAt),
+  ],
+);
+
+/** Calendar events: created in the hub (source "hub") or pulled from a calendar (e.g. "gcal"). */
+export const event = pgTable(
+  "event",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    // No DB default: Postgres cannot use a just-added enum value in the same migration.
+    source: sourceEnum("source").notNull(),
+    /** Id in the source system; null for hub-created events. */
+    sourceId: text("source_id"),
+    courseId: uuid("course_id").references(() => course.id, { onDelete: "set null" }),
+    title: text("title").notNull(),
+    description: text("description"),
+    location: text("location"),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+    allDay: boolean("all_day").notNull().default(false),
+    url: text("url"),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("event_user_source_idx").on(t.userId, t.source, t.sourceId),
+    index("event_user_starts_idx").on(t.userId, t.startsAt),
   ],
 );
 
