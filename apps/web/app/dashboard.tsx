@@ -124,7 +124,7 @@ export function Dashboard({ name, data }: { name: string; data: Data }) {
         <h2>Apps</h2>
         <ul className="apps">
           <li>
-            <a href={mcvLinks.home} target="_blank" rel="noreferrer">
+            <a href={mcvLinks.courses} target="_blank" rel="noreferrer">
               MyCourseVille ↗
             </a>
           </li>
