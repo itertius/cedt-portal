@@ -1,18 +1,35 @@
+import Link from "next/link";
+import { getSession } from "@/lib/auth";
 import { commitSha, deployEnv } from "@/lib/env";
+import { SignOutButton } from "./sign-out-button";
 
 export const dynamic = "force-dynamic";
 
-export default function Home() {
-  const env = deployEnv();
+export default async function Home() {
+  const session = await getSession();
+
   return (
     <main className="shell">
       <h1>CEDT Hub</h1>
-      <p>
-        One login for MyCourseVille, Grader, Talent Journey, Intern Portal, Nisitez and ICES. Coming
-        soon.
-      </p>
+      {session ? (
+        <div className="stack">
+          <p>
+            Logged in as <strong>{session.user.name}</strong>.
+          </p>
+          <SignOutButton />
+        </div>
+      ) : (
+        <div className="stack">
+          <p>
+            One login for MyCourseVille, Grader, Talent Journey, Intern Portal, Nisitez and ICES.
+          </p>
+          <Link className="button" href="/login">
+            Log in
+          </Link>
+        </div>
+      )}
       <p className="meta">
-        {env} · {commitSha()}
+        {deployEnv()} · {commitSha()}
       </p>
     </main>
   );

@@ -35,13 +35,39 @@ If you are not sure a change works, keep it on its own branch and open the PR as
 
 ## Local setup
 
-Requirements: Node 22+ and pnpm 10 (`npm i -g pnpm` or `corepack enable`).
+Requirements: Node 22+, pnpm 10 (`npm i -g pnpm` or `corepack enable`) and Docker.
 
 ```sh
-cp .env.example apps/web/.env.local
+cp .env.example apps/web/.env.local   # then set BETTER_AUTH_SECRET (openssl rand -base64 32)
+docker compose up -d                  # Postgres; use POSTGRES_PORT=5433 if 5432 is taken
 pnpm install
-pnpm dev        # http://localhost:3000
+pnpm db:migrate
+pnpm dev                              # http://localhost:3000
 ```
+
+### Logging in without real MyCourseVille credentials
+
+Run the mock MCV server and point the app at it:
+
+```sh
+node apps/web/scripts/mock-mcv.mjs    # http://localhost:4010
+```
+
+In `apps/web/.env.local` set `MCV_BASE_URL=http://localhost:4010` and any non-empty
+`MCV_CLIENT_ID` / `MCV_CLIENT_SECRET`. "Log in with MyCourseVille" then signs you in as a fake
+student.
+
+### Tests
+
+```sh
+pnpm test                                       # unit tests (Vitest)
+pnpm build && ./scripts/e2e-auth.sh             # login flow end to end (needs DATABASE_URL)
+```
+
+### Database changes
+
+Edit `packages/db/src/schema.ts`, then run `pnpm db:generate` and commit the new file in
+`packages/db/migrations`. CI fails if the schema and migrations drift.
 
 ## Rules
 

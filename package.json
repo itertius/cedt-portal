@@ -11,7 +11,10 @@
     "typecheck": "turbo run typecheck",
     "lint": "biome check .",
     "lint:ci": "biome ci .",
-    "format": "biome format --write ."
+    "format": "biome format --write .",
+    "test": "turbo run test",
+    "db:generate": "pnpm --filter @cedt-hub/db generate",
+    "db:migrate": "pnpm --filter @cedt-hub/db migrate"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.9",
