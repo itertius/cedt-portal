@@ -1,0 +1,88 @@
+# Testing
+
+Every change is proven by three layers of tests. All of them run in CI (`ci` job) on every pull
+request to `dev` or `master`, and a PR cannot merge unless they pass.
+
+| Layer      | Tool                   | Where                                                       | What it covers                                              |
+| ---------- | ---------------------- | ----------------------------------------------------------- | ----------------------------------------------------------- |
+| Unit       | Vitest                 | `packages/*/src/**/*.test.ts`, `apps/web/lib/**/*.test.ts`  | Pure logic: normalizers, date math, parsing, validation     |
+| Database   | Vitest + real Postgres | `apps/web/lib/**/*.db.test.ts` and DB blocks in `*.test.ts` | Queries, upserts, sync rules, ownership between users       |
+| End-to-end | Playwright (Chromium)  | `e2e/tests/phaseN-*.spec.ts`                                | The real app in a real browser, one spec file per SOW phase |
+
+External services are never called in tests. The app talks to local mocks instead:
+
+| Mock          | File                               | Replaces                                                                                       |
+| ------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------- |
+| MyCourseVille | `apps/web/scripts/mock-mcv.mjs`    | OAuth, profile, courses, assignments                                                           |
+| Google        | `apps/web/scripts/mock-google.mjs` | OAuth (with PKCE), userinfo, Calendar v3, plus `__test` hooks to simulate edits made in Google |
+
+## Phase gate (Definition of Done)
+
+**A phase is complete only when its Playwright spec exists, covers every acceptance item of that
+phase in [SOW.md](SOW.md), and passes in CI together with all earlier phases' specs.**
+
+When a phase is finished:
+
+1. Write or extend `e2e/tests/phaseN-<name>.spec.ts`, with one `test()` per acceptance item. Use
+   the mocks for any external platform.
+2. Add unit and database tests for the phase's logic (anything with rules, dates, ownership or
+   sync).
+3. Run the full suite locally (below) and in CI. Every earlier phase must still pass, because the
+   suite is cumulative and doubles as a regression test.
+4. Mark the phase **Done** in [SOW.md](SOW.md) with the name of its spec file.
+
+Tests that need a real third-party account (real MCV, real Google) are a manual check before a
+production release. They are listed under "Manual release checks" below and never replace the
+automated gate.
+
+## Current coverage
+
+| Phase              | Spec                        | Covers                                                                                                                                                                                      |
+| ------------------ | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0 Setup            | `phase0-foundation.spec.ts` | health, logged-out home + icon, protected pages redirect, MCV login and logout, cron secret                                                                                                 |
+| 1 MVP aggregator   | `phase1-mcv.spec.ts`        | background MCV sync fills the dashboard (overdue, due soon, undated; current term only), MCV deep links, mark done survives a sync, Sync now, launcher links for all 6 platforms, cron sync |
+| 2 Calendar + Notes | `phase2-calendar.spec.ts`   | MCV deadlines on week view, month navigation, validation message, create/edit/delete in Bangkok time, multi-day all-day events, **form works without JavaScript**                           |
+|                    | `phase2-gcal.spec.ts`       | connect Google (keeps MCV login), pull read-only events, push without duplicates, edits and deletes in both directions, disconnect                                                          |
+|                    | `phase2-notes.spec.ts`      | autosave survives reload, Markdown preview, **XSS: scripts never run, `javascript:` links stripped**, Thai substring search, course filter, pinning, note from an event, delete             |
+
+## Running the tests
+
+```sh
+# once
+npx -y pnpm@10 install
+npx -y pnpm@10 e2e:install                     # downloads Chromium for Playwright
+
+# database for tests (Docker)
+docker compose down -v && POSTGRES_PORT=5433 docker compose up -d --wait
+export DATABASE_URL=postgres://cedt@localhost:5433/cedt_hub
+npx -y pnpm@10 db:migrate
+
+npx -y pnpm@10 test                            # unit + database tests
+npx -y pnpm@10 build && npx -y pnpm@10 e2e     # Playwright (starts both mocks and the app itself)
+npx -y pnpm@10 --filter @cedt-hub/e2e report   # open the HTML report (traces, screenshots, video)
+```
+
+- The Playwright run **empties the database first** (it truncates every table), so point
+  `DATABASE_URL` at the test database, never at Neon.
+- It uses its own ports (app 3300, mock MCV 4310, mock Google 4320), so it can run while
+  `pnpm dev` is open.
+- Run one phase: `npx -y pnpm@10 --filter @cedt-hub/e2e exec playwright test phase2-notes`.
+- Watch it in a browser: add `--headed` or `--ui`.
+- On a CI failure, download the **playwright-report** artifact from the run. It holds traces,
+  screenshots and videos of the failing tests.
+
+## Writing tests that stay reliable
+
+- Wait for the page you expect before acting (for example `openEvent()` waits for "Edit event"),
+  never for a fixed time.
+- Select by role and label (`getByRole`, `getByLabel`), the way a user finds things. Scope to a
+  section when a word appears twice.
+- Work done in the background (`after()` syncs) is checked with `expect.poll` or `eventually()`.
+- Use unique titles prefixed `PW` so tests in one run never collide.
+
+## Manual release checks (before `dev` → `master`)
+
+- [ ] Log in with real MyCourseVille on `dev.hub` (once the MCV client exists); assignments match MCV.
+- [ ] Open one synced assignment link; it lands on the right MCV page.
+- [ ] Connect real Google on `dev.hub`; a hub event appears in Google Calendar and a Google event appears in the hub.
+- [ ] Migrations ran on the production Neon database before the release merge.
