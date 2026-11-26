@@ -1,9 +1,10 @@
 import "server-only";
+import { GOOGLE_CALENDAR_SCOPE, googleUrls } from "@cedt-hub/connectors/gcal";
 import { schema } from "@cedt-hub/db";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
-import { genericOAuth } from "better-auth/plugins/generic-oauth";
+import { type GenericOAuthConfig, genericOAuth } from "better-auth/plugins/generic-oauth";
 import { headers } from "next/headers";
 import { getDb } from "./db";
 import { fetchMcvProfile, MCV_PROVIDER_ID, MCV_URLS } from "./mcv/profile";
@@ -16,9 +17,77 @@ function baseURL(): string | undefined {
 }
 
 export const mcvEnabled = Boolean(process.env.MCV_CLIENT_ID && process.env.MCV_CLIENT_SECRET);
+export const googleEnabled = Boolean(
+  process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
+);
+export const GOOGLE_PROVIDER_ID = "google";
+
+interface GoogleUserInfo {
+  sub?: string;
+  email?: string;
+  email_verified?: boolean;
+  name?: string;
+  picture?: string;
+}
+
+async function fetchGoogleProfile(accessToken: string) {
+  const res = await fetch(googleUrls().userinfo, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    cache: "no-store",
+  });
+  if (!res.ok) return null;
+  const u = (await res.json()) as GoogleUserInfo;
+  if (!u.sub) return null;
+  return {
+    id: u.sub,
+    name: u.name ?? u.email ?? "Google account",
+    email: u.email ?? null,
+    image: u.picture,
+    emailVerified: u.email_verified === true,
+  };
+}
 
 /** Auth needs a database and a secret. Without them the site still renders, logged out. */
 export const authConfigured = Boolean(process.env.DATABASE_URL && process.env.BETTER_AUTH_SECRET);
+
+function oauthProviders(): GenericOAuthConfig[] {
+  const providers: GenericOAuthConfig[] = [];
+  if (mcvEnabled) {
+    providers.push({
+      providerId: MCV_PROVIDER_ID,
+      name: "MyCourseVille",
+      clientId: process.env.MCV_CLIENT_ID as string,
+      clientSecret: process.env.MCV_CLIENT_SECRET as string,
+      authorizationUrl: MCV_URLS.authorize,
+      tokenUrl: MCV_URLS.token,
+      tokenEndpointAuth: { method: "client_secret_post" },
+      pkce: false,
+      getUserInfo: async (tokens) =>
+        tokens.accessToken ? fetchMcvProfile(tokens.accessToken) : null,
+    });
+  }
+  if (googleEnabled) {
+    // Google is only for Calendar sync: it can be linked to an account, never used to create one.
+    // A generic provider keeps every endpoint overridable for the local mock.
+    providers.push({
+      providerId: GOOGLE_PROVIDER_ID,
+      name: "Google",
+      clientId: process.env.GOOGLE_CLIENT_ID as string,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      authorizationUrl: googleUrls().authorize,
+      tokenUrl: googleUrls().token,
+      tokenEndpointAuth: { method: "client_secret_post" },
+      scopes: ["openid", "email", "profile", GOOGLE_CALENDAR_SCOPE],
+      accessType: "offline",
+      prompt: "consent",
+      pkce: true,
+      disableSignUp: true,
+      getUserInfo: async (tokens) =>
+        tokens.accessToken ? fetchGoogleProfile(tokens.accessToken) : null,
+    });
+  }
+  return providers;
+}
 
 function createAuth() {
   return betterAuth({
@@ -28,34 +97,20 @@ function createAuth() {
     database: drizzleAdapter(getDb(), { provider: "pg", schema }),
     account: {
       encryptOAuthTokens: true,
-      // MCV emails are unverified placeholders; never link accounts by email.
-      accountLinking: { enabled: false },
+      accountLinking: {
+        // Linking is only ever explicit (Settings -> Connect Google), never by matching email:
+        // MCV emails are unverified placeholders.
+        enabled: true,
+        disableImplicitLinking: true,
+        allowDifferentEmails: true,
+        trustedProviders: [GOOGLE_PROVIDER_ID],
+      },
     },
     session: {
       expiresIn: 60 * 60 * 24 * 7,
       updateAge: 60 * 60 * 24,
     },
-    plugins: [
-      genericOAuth({
-        config: mcvEnabled
-          ? [
-              {
-                providerId: MCV_PROVIDER_ID,
-                name: "MyCourseVille",
-                clientId: process.env.MCV_CLIENT_ID as string,
-                clientSecret: process.env.MCV_CLIENT_SECRET as string,
-                authorizationUrl: MCV_URLS.authorize,
-                tokenUrl: MCV_URLS.token,
-                tokenEndpointAuth: { method: "client_secret_post" },
-                pkce: false,
-                getUserInfo: async (tokens) =>
-                  tokens.accessToken ? fetchMcvProfile(tokens.accessToken) : null,
-              },
-            ]
-          : [],
-      }),
-      nextCookies(),
-    ],
+    plugins: [genericOAuth({ config: oauthProviders() }), nextCookies()],
   });
 }
 

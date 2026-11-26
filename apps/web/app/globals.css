@@ -309,3 +309,35 @@ a {
     min-height: auto;
   }
 }
+
+.cal-item.source-gcal {
+  border-left-color: #8e24aa;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.5rem 0 0;
+}
+
+.swatch {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 0.2rem;
+  margin-left: 0.4rem;
+}
+
+.swatch.mcv {
+  background: #1e88e5;
+}
+
+.swatch.hub {
+  background: #43a047;
+}
+
+.swatch.gcal {
+  background: #8e24aa;
+}

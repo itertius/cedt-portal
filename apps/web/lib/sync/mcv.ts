@@ -1,54 +1,20 @@
 import "server-only";
 import { fetchMcvSnapshot, McvApiError, type McvSnapshot } from "@cedt-hub/connectors/mcv";
 import { schema } from "@cedt-hub/db";
-import { and, eq, isNull, lt, notInArray, or, sql } from "@cedt-hub/db/orm";
+import { and, eq, notInArray, sql } from "@cedt-hub/db/orm";
 import { getAuth } from "../auth";
 import { getDb } from "../db";
 import { MCV_PROVIDER_ID } from "../mcv/profile";
+import { acquireLock, releaseLock } from "./lock";
 
 const { account, course, syncState, task } = schema;
 
 /** How old data may get before a page view triggers a background sync. */
 export const MCV_STALE_AFTER_MS = 15 * 60 * 1000;
-/** A "running" sync older than this is assumed dead and may be retried. */
-const LOCK_TIMEOUT_MS = 5 * 60 * 1000;
-
 export type SyncResult =
   | { status: "ok"; courses: number; tasks: number; failedCourses: number }
   | { status: "skipped"; reason: "running" | "fresh" | "not-connected" }
   | { status: "error"; error: string };
-
-/** Take the per-user lock. Returns false if another sync is already running. */
-export async function acquireLock(userId: string): Promise<boolean> {
-  const db = getDb();
-  const now = new Date();
-  const staleLock = new Date(now.getTime() - LOCK_TIMEOUT_MS);
-  const rows = await db
-    .insert(syncState)
-    .values({ userId, source: "mcv", status: "running", startedAt: now })
-    .onConflictDoUpdate({
-      target: [syncState.userId, syncState.source],
-      set: { status: "running", startedAt: now },
-      setWhere: or(
-        sql`${syncState.status} <> 'running'`,
-        isNull(syncState.startedAt),
-        lt(syncState.startedAt, staleLock),
-      ),
-    })
-    .returning({ userId: syncState.userId });
-  return rows.length > 0;
-}
-
-export async function releaseLock(userId: string, error: string | null) {
-  await getDb()
-    .update(syncState)
-    .set(
-      error
-        ? { status: "error", lastError: error.slice(0, 500) }
-        : { status: "idle", lastError: null, lastSyncedAt: new Date() },
-    )
-    .where(and(eq(syncState.userId, userId), eq(syncState.source, "mcv")));
-}
 
 async function getMcvAccessToken(userId: string): Promise<string | null> {
   const auth = getAuth();
@@ -144,17 +110,17 @@ export async function syncMcv(userId: string, opts: { force?: boolean } = {}): P
     }
   }
 
-  if (!(await acquireLock(userId))) return { status: "skipped", reason: "running" };
+  if (!(await acquireLock(userId, "mcv"))) return { status: "skipped", reason: "running" };
 
   try {
     const token = await getMcvAccessToken(userId);
     if (!token) {
-      await releaseLock(userId, "Not connected to MyCourseVille");
+      await releaseLock(userId, "mcv", "Not connected to MyCourseVille");
       return { status: "skipped", reason: "not-connected" };
     }
     const snap = await fetchMcvSnapshot(token);
     await saveMcvSnapshot(userId, snap);
-    await releaseLock(userId, null);
+    await releaseLock(userId, "mcv", null);
     return {
       status: "ok",
       courses: snap.courses.length,
@@ -168,7 +134,7 @@ export async function syncMcv(userId: string, opts: { force?: boolean } = {}): P
         : err instanceof Error
           ? err.message
           : String(err);
-    await releaseLock(userId, message);
+    await releaseLock(userId, "mcv", message);
     return { status: "error", error: message };
   }
 }

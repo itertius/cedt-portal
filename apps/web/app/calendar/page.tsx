@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { Nav } from "@/components/nav";
 import { getSession } from "@/lib/auth";
 import { type CalendarItem, listCalendar, listCourses } from "@/lib/calendar/events";
@@ -17,6 +18,8 @@ import {
   todayKey,
   weekDays,
 } from "@/lib/calendar/time";
+import { GCAL_STALE_AFTER_MS, googleAccountId, syncGcal } from "@/lib/sync/gcal";
+import { getSyncState } from "@/lib/sync/lock";
 import { EventForm } from "./event-form";
 
 export const dynamic = "force-dynamic";
@@ -96,10 +99,18 @@ export default async function CalendarPage({
   const firstDay = grid[0]?.[0] as DateKey;
   const lastDay = grid.at(-1)?.at(-1) as DateKey;
 
-  const [items, courses] = await Promise.all([
-    listCalendar(session.user.id, startOfDay(firstDay), startOfDay(addDays(lastDay, 1))),
-    listCourses(session.user.id),
+  const userId = session.user.id;
+  const [items, courses, googleLinked, gcalState] = await Promise.all([
+    listCalendar(userId, startOfDay(firstDay), startOfDay(addDays(lastDay, 1))),
+    listCourses(userId),
+    googleAccountId(userId),
+    getSyncState(userId, "gcal"),
   ]);
+  const gcalStale =
+    !gcalState?.lastSyncedAt || Date.now() - gcalState.lastSyncedAt.getTime() > GCAL_STALE_AFTER_MS;
+  if (googleLinked && gcalStale && gcalState?.status !== "running") {
+    after(() => syncGcal(userId));
+  }
   const byDay = groupByDay(items);
 
   const prev = view === "month" ? addMonths(anchor, -1) : addDays(anchor, -7);
@@ -131,6 +142,22 @@ export default async function CalendarPage({
           </Link>
         </div>
       </header>
+
+      <p className="muted small legend">
+        <span className="swatch mcv" /> MCV deadline <span className="swatch hub" /> Your event{" "}
+        <span className="swatch gcal" /> Google Calendar ·{" "}
+        {googleLinked ? (
+          gcalState?.status === "error" ? (
+            <Link href="/settings" className="error">
+              Google sync problem — see Settings
+            </Link>
+          ) : (
+            "Synced with Google Calendar"
+          )
+        ) : (
+          <Link href="/settings">Connect Google Calendar</Link>
+        )}
+      </p>
 
       <div className={`cal-grid ${view}`}>
         {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((d) => (

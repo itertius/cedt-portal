@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # End-to-end MCV login test against the mock MCV server.
-# Needs: a migrated Postgres at $DATABASE_URL and a built app (pnpm build).
+# Needs: a freshly migrated (empty) Postgres at $DATABASE_URL and a built app (pnpm build).
+# Locally: docker compose down -v && POSTGRES_PORT=5433 docker compose up -d && pnpm db:migrate
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -8,12 +9,14 @@ PORT=${E2E_PORT:-3100}
 BASE="http://localhost:$PORT"
 JAR=$(mktemp)
 export BETTER_AUTH_SECRET=${BETTER_AUTH_SECRET:-$(openssl rand -base64 32)}
-export BETTER_AUTH_URL=$BASE MCV_CLIENT_ID=e2e MCV_CLIENT_SECRET=e2e MCV_BASE_URL=http://localhost:4010 CRON_SECRET=e2e-cron
+export BETTER_AUTH_URL=$BASE MCV_CLIENT_ID=e2e MCV_CLIENT_SECRET=e2e MCV_BASE_URL=http://localhost:4010 CRON_SECRET=e2e-cron \
+  GOOGLE_CLIENT_ID=e2e-google GOOGLE_CLIENT_SECRET=e2e-google GOOGLE_BASE_URL=http://localhost:4020
 : "${DATABASE_URL:?DATABASE_URL must point at a migrated database}"
 
 node apps/web/scripts/mock-mcv.mjs >/dev/null & MOCK=$!
+node apps/web/scripts/mock-google.mjs >/dev/null & GMOCK=$!
 (cd apps/web && exec ./node_modules/.bin/next start -p "$PORT") >/dev/null 2>&1 & APP=$!
-trap 'kill $MOCK $APP 2>/dev/null || true; rm -f "$JAR"' EXIT
+trap 'kill $MOCK $GMOCK $APP 2>/dev/null || true; rm -f "$JAR"' EXIT
 
 for _ in $(seq 1 60); do curl -sf "$BASE/api/health" >/dev/null && break; sleep 1; done
 
@@ -61,10 +64,11 @@ done
 pass "background sync fills the dashboard and the launcher lists every platform"
 
 node scripts/e2e-calendar.mjs "$BASE" "$JAR" || fail "calendar e2e"
+node scripts/e2e-gcal.mjs "$BASE" "$JAR" http://localhost:4020 e2e-cron || fail "google calendar e2e"
 
 [[ $(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/cron/sync") == 401 ]] || fail "cron without secret"
 CRON=$(curl -s -H 'Authorization: Bearer e2e-cron' "$BASE/api/cron/sync")
-[[ $CRON == *'"users":'* && $CRON != *'"error":1'* ]] || fail "cron: $CRON"
+[[ $CRON == *'"mcv":{"users":1'* && $CRON == *'"gcal":{"users":1'* && $CRON != *'"error":1'* ]] || fail "cron: $CRON"
 pass "cron endpoint is protected and runs ($CRON)"
 
 curl -s -o /dev/null -b "$JAR" -c "$JAR" -H "Origin: $BASE" -H 'Content-Type: application/json' \

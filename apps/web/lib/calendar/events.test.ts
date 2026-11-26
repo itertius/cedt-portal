@@ -138,7 +138,7 @@ run("events (database)", () => {
     ).toBe(true);
     expect((await getEvent(me, id as string))?.title).toBe("Study (moved)");
 
-    expect(await deleteEvent(me, id as string)).toBe(true);
+    expect(await deleteEvent(me, id as string)).toEqual({ remoteId: null });
     expect(await getEvent(me, id as string)).toBeNull();
   });
 
