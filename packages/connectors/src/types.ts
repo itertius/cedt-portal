@@ -1,4 +1,4 @@
-export type Source = "mcv" | "grader" | "talent" | "intern" | "nisitez" | "ices" | "gcal";
+export type Source = "mcv" | "hub" | "grader" | "talent" | "intern" | "nisitez" | "ices" | "gcal";
 
 /** A course as every connector reports it. */
 export interface NormalizedCourse {

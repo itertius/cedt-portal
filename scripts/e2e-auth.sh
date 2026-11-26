@@ -60,6 +60,8 @@ for url in cedt-grader.nattee.net talent.cedt.community cedtintern.cp.eng.chula.
 done
 pass "background sync fills the dashboard and the launcher lists every platform"
 
+node scripts/e2e-calendar.mjs "$BASE" "$JAR" || fail "calendar e2e"
+
 [[ $(curl -s -o /dev/null -w '%{http_code}' "$BASE/api/cron/sync") == 401 ]] || fail "cron without secret"
 CRON=$(curl -s -H 'Authorization: Bearer e2e-cron' "$BASE/api/cron/sync")
 [[ $CRON == *'"users":'* && $CRON != *'"error":1'* ]] || fail "cron: $CRON"
