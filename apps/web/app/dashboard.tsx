@@ -1,5 +1,7 @@
 import { PLATFORMS } from "@cedt-hub/connectors";
+import { GRADER_HOME, graderProblemUrl } from "@cedt-hub/connectors/grader";
 import { TALENT_HOME } from "@cedt-hub/connectors/talent";
+import Link from "next/link";
 import type { getDashboard } from "@/lib/dashboard";
 import { formatDue, relative } from "@/lib/format";
 import { SyncButton, TaskCheckbox } from "./dashboard-client";
@@ -118,6 +120,88 @@ export function Dashboard({ name, data }: { name: string; data: Data }) {
               </li>
             ))}
           </ul>
+        )}
+      </section>
+
+      <section className="card">
+        <h2>
+          Grader
+          {data.grader.total > 0 ? (
+            <span className="muted">
+              {" "}
+              {data.grader.solved}/{data.grader.total} solved
+            </span>
+          ) : null}
+        </h2>
+        {data.grader.total === 0 ? (
+          <p className="muted">
+            <Link href="/settings#grader">Connect CEDT Grader</Link> to track your problems.
+          </p>
+        ) : data.grader.inProgress.length === 0 ? (
+          <p className="muted">Nothing in progress. Nice.</p>
+        ) : (
+          <ul className="tasks">
+            {data.grader.inProgress.slice(0, 6).map((p) => (
+              <li key={p.problemId} className="task activity">
+                <span className="tag">GRADER</span>
+                <span className="task-title">
+                  <a href={graderProblemUrl(p.problemId)} target="_blank" rel="noreferrer">
+                    {p.name}
+                  </a>
+                  {p.fullName ? <span className="muted"> · {p.fullName}</span> : null}
+                </span>
+                <span className="due">best {p.bestScore ?? 0}/100</span>
+              </li>
+            ))}
+          </ul>
+        )}
+        {data.grader.total > 0 ? (
+          <p className="small">
+            <a href={GRADER_HOME} target="_blank" rel="noreferrer">
+              Open the grader ↗
+            </a>
+          </p>
+        ) : null}
+      </section>
+
+      <section className="card">
+        <h2>
+          Internships
+          {data.internships > 0 ? (
+            <span className="muted"> {data.internships} openings</span>
+          ) : null}
+        </h2>
+        {data.internships === 0 ? (
+          <p className="muted">
+            <Link href="/settings#intern">Connect the Intern Portal</Link> to browse openings and
+            get its deadlines.
+          </p>
+        ) : (
+          <>
+            {data.bookmarks.length === 0 ? (
+              <p className="muted">No bookmarked openings yet.</p>
+            ) : (
+              <ul className="tasks">
+                {data.bookmarks.map((o) => (
+                  <li key={o.openingId} className="task activity">
+                    <span className="tag">INTERN</span>
+                    <span className="task-title">
+                      <a href={o.url} target="_blank" rel="noreferrer">
+                        {o.title}
+                      </a>
+                      <span className="muted"> · {o.company}</span>
+                    </span>
+                    <span className="due">
+                      {o.compensation ? `฿${o.compensation.toLocaleString("en-US")}` : "—"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <p className="small">
+              <Link href="/internships">Browse all openings →</Link>
+            </p>
+          </>
         )}
       </section>
 

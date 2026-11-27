@@ -55,6 +55,18 @@ export default defineConfig({
       env: { MOCK_TALENT_PORT: String(E2E.talentPort) },
     },
     {
+      command: "node ../apps/web/scripts/mock-grader.mjs",
+      port: E2E.graderPort,
+      reuseExistingServer: false,
+      env: { MOCK_GRADER_PORT: String(E2E.graderPort) },
+    },
+    {
+      command: "node ../apps/web/scripts/mock-intern.mjs",
+      port: E2E.internPort,
+      reuseExistingServer: false,
+      env: { MOCK_INTERN_PORT: String(E2E.internPort) },
+    },
+    {
       command: `./node_modules/.bin/next start -p ${E2E.appPort}`,
       cwd: "../apps/web",
       url: `${E2E.baseURL}/api/health`,

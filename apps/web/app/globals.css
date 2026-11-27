@@ -452,3 +452,11 @@ a {
 .task.activity {
   grid-template-columns: auto 1fr auto;
 }
+
+.internship .tag {
+  margin-right: 0.3rem;
+}
+
+details summary {
+  cursor: pointer;
+}
