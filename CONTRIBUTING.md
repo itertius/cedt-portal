@@ -88,5 +88,6 @@ Edit `packages/db/src/schema.ts`, then run `pnpm db:generate` and commit the new
 
 - Never commit secrets, tokens or real student data. Use `.env.local`.
 - Never add code that stores passwords for other platforms or scrapes them server-side (see the
-  integration rules in docs/PLAN.md).
+  integration rules in docs/PLAN.md). The rank 5 exception in docs/INTEGRATIONS.md covers only
+  personal tools that store their owner's own password, never CEDT Hub.
 - Follow the [Code of Conduct](CODE_OF_CONDUCT.md).

@@ -98,6 +98,11 @@ export async function saveMcvSnapshot(userId: string, snap: McvSnapshot) {
 }
 
 export async function syncMcv(userId: string, opts: { force?: boolean } = {}): Promise<SyncResult> {
+  // No MyCourseVille OAuth account: use the CUNET-password session sync if the user set one up.
+  if (!(await hasMcvOAuthAccount(userId))) {
+    const { syncMcvSession } = await import("./mcv-session");
+    return syncMcvSession(userId, opts);
+  }
   const db = getDb();
 
   if (!opts.force) {
@@ -137,6 +142,15 @@ export async function syncMcv(userId: string, opts: { force?: boolean } = {}): P
     await releaseLock(userId, "mcv", message);
     return { status: "error", error: message };
   }
+}
+
+export async function hasMcvOAuthAccount(userId: string) {
+  const [acc] = await getDb()
+    .select({ id: account.id })
+    .from(account)
+    .where(and(eq(account.userId, userId), eq(account.providerId, MCV_PROVIDER_ID)))
+    .limit(1);
+  return Boolean(acc);
 }
 
 /** All users with a MyCourseVille account, for the cron job. */

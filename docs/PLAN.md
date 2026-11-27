@@ -29,6 +29,8 @@ Nisitez and other CEDT apps already use.
 Rules:
 
 - Never store another platform's password, and never log in headlessly on a user's behalf.
+  The only exception is a personal, single-user tool storing its owner's own password; see the
+  rank 5 exception in [INTEGRATIONS.md](INTEGRATIONS.md). It never applies to CEDT Hub.
 - Tokens and cookies are encrypted and revocable.
 - Polling is polite and cached.
 - Before the public launch, get written permission from CEDT and the platform owners. That
