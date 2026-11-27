@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>CEDT Hub</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <h1>CEDT Hub</h1>
+
+    <section id="unpaired" hidden>
+      <p>Connect this browser to your hub. Your Intern Portal session will then sync by itself.</p>
+      <label>
+        Hub
+        <select id="hub">
+          <option value="https://hub.witsanupong-kolakul.com">hub.witsanupong-kolakul.com</option>
+          <option value="https://dev.hub.witsanupong-kolakul.com">dev.hub (staging)</option>
+          <option value="http://localhost:3000">localhost:3000 (development)</option>
+          <option value="custom">Other…</option>
+        </select>
+      </label>
+      <input id="hub-custom" type="url" placeholder="http://localhost:3300" hidden />
+      <button id="connect" type="button">Connect to CEDT Hub</button>
+    </section>
+
+    <section id="paired" hidden>
+      <p id="who"></p>
+      <p id="intern-status" role="status"></p>
+      <div class="row">
+        <button id="sync" type="button">Sync now</button>
+        <button id="open-portal" type="button" class="secondary" hidden>Open Intern Portal</button>
+      </div>
+      <button id="disconnect" type="button" class="secondary">Disconnect</button>
+    </section>
+
+    <details>
+      <summary>Advanced</summary>
+      <label>
+        Intern Portal address
+        <input id="portal" type="url" />
+      </label>
+      <button id="save-portal" type="button" class="secondary">Save</button>
+    </details>
+
+    <script src="popup.js" type="module"></script>
+  </body>
+</html>

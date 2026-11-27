@@ -9,7 +9,9 @@ function ProviderSignInButton({
   pendingLabel,
   disabled,
   secondary = false,
+  callbackURL = "/",
 }: {
+  callbackURL?: string;
   provider: string;
   label: string;
   pendingLabel: string;
@@ -24,7 +26,7 @@ function ProviderSignInButton({
     setError(null);
     const { error } = await authClient.signIn.social({
       provider,
-      callbackURL: "/",
+      callbackURL,
       // Rejected sign-ups (e.g. a Google account that is not invited) come back here.
       errorCallbackURL: "/login",
     });
@@ -56,12 +58,15 @@ function ProviderSignInButton({
 export function McvSignInButton({
   disabled,
   secondary,
+  next,
 }: {
   disabled: boolean;
   secondary?: boolean;
+  next?: string;
 }) {
   return (
     <ProviderSignInButton
+      callbackURL={next}
       provider="mcv"
       label="Log in with MyCourseVille"
       pendingLabel="Redirecting to MyCourseVille…"
@@ -71,9 +76,10 @@ export function McvSignInButton({
   );
 }
 
-export function CedtSignInButton({ disabled }: { disabled: boolean }) {
+export function CedtSignInButton({ disabled, next }: { disabled: boolean; next?: string }) {
   return (
     <ProviderSignInButton
+      callbackURL={next}
       provider="cedt"
       label="Log in with CEDT"
       pendingLabel="Redirecting to CEDT…"
@@ -85,12 +91,15 @@ export function CedtSignInButton({ disabled }: { disabled: boolean }) {
 export function GoogleSignInButton({
   disabled,
   secondary,
+  next,
 }: {
   disabled: boolean;
   secondary?: boolean;
+  next?: string;
 }) {
   return (
     <ProviderSignInButton
+      callbackURL={next}
       provider="google"
       label="Log in with Google"
       pendingLabel="Redirecting to Google…"
