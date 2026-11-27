@@ -11,21 +11,28 @@ CEDT students juggle many separate platforms: MyCourseVille (MCV), Talent Journe
 
 ## 1. Integration reality (most important constraint)
 
-| Platform                                                                                                   | Likely access                                        | Strategy                                                                                                       |
-| ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
-| [MyCourseVille](https://www.mycourseville.com/?q=courseville&type=course&role=all)                         | Official OAuth2 + REST API (used in CEDT courses)    | **Login provider + API sync** (courses, assignments, announcements). Needs an MCV client_id from the CV team   |
-| Chula SSO                                                                                                  | Chula IT SSO, or Microsoft Entra (Chula M365 tenant) | **Login provider** via OIDC. Needs app registration or tenant consent from Chula IT. Until then, use MCV login |
-| [CEDT Grader](https://cedt-grader.nattee.net/main/list)                                                    | Web app, no public API                               | Deep link + browser-extension sync (problem list, scores)                                                      |
-| [Talent Journey](https://talent.cedt.community/) / [Intern Portal](https://cedtintern.cp.eng.chula.ac.th/) | Web app, no public API                               | Deep link + extension sync (applications, status). Use an iCal/email parse fallback where it exists            |
-| [Nisitez](https://nisitez.siamcodex.com/login)                                                             | Web app, no public API                               | Deep link + extension sync                                                                                     |
-| [CEDT-ICES](https://cedt-ices.com/login)                                                                   | Web app (evaluations)                                | Deep link + "pending evaluation" reminder (extension or manual)                                                |
-| Google Calendar / Outlook                                                                                  | Official OAuth                                       | Two-way calendar sync                                                                                          |
+Full research, endpoints and sources: **[INTEGRATIONS.md](INTEGRATIONS.md)**. Key finding:
+`cedtintern.cp.eng.chula.ac.th` is also **CEDT IDP**, an OAuth provider that Talent Journey,
+Nisitez and other CEDT apps already use.
+
+| Platform                                                                           | Access found                                                                      | Strategy                                                             |
+| ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Hub login                                                                          | CEDT IDP OAuth (rich student profile)                                             | **Primary login** once we get a client; MCV login until then         |
+| [MyCourseVille](https://www.mycourseville.com/?q=courseville&type=course&role=all) | Official OAuth + REST                                                             | Built: courses + assignments. No public announcements endpoint found |
+| [Talent Journey](https://talent.cedt.community/)                                   | Public `/api/v2/home/bootstrap` (activities); login via CEDT IDP                  | Read public activities onto the calendar now; personal data later    |
+| [CEDT Intern Portal](https://cedtintern.cp.eng.chula.ac.th/)                       | JSON API (`/api/common/sessions`, `/api/sessions/{id}/openings`) behind a session | User-pasted cookie (encrypted) → extension → IDP token               |
+| [CEDT Grader](https://cedt-grader.nattee.net/main/list)                            | cafe-grader `/api/v1` JSON API with JWT                                           | One-time login exchanged for a JWT; **password never stored**        |
+| [Nisitez](https://nisitez.siamcodex.com/login)                                     | Login via CEDT IDP or Google; no public API                                       | Launcher; extension or ask the developers                            |
+| [CEDT-ICES](https://cedt-ices.com/login)                                           | Login via MyCourseVille; no public API                                            | Launcher; extension reads pending evaluations                        |
+| Google Calendar / Outlook                                                          | Official OAuth                                                                    | Built: two-way Google sync                                           |
 
 Rules:
 
-- Never store another platform's password.
-- The browser extension reads only pages the user already opened while logged in and posts normalized JSON to the hub.
-- Before the public launch, get written permission from CEDT/platform owners. That permission is the path to official APIs.
+- Never store another platform's password, and never log in headlessly on a user's behalf.
+- Tokens and cookies are encrypted and revocable.
+- Polling is polite and cached.
+- Before the public launch, get written permission from CEDT and the platform owners. That
+  permission is also the path to official APIs.
 
 ## 2. Tech stack
 
