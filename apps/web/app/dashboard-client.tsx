@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { syncNow, toggleTask } from "./actions";
 
 export function SyncButton() {
@@ -35,16 +35,21 @@ export function SyncButton() {
 }
 
 export function TaskCheckbox({ id, done, title }: { id: string; done: boolean; title: string }) {
+  // Flip immediately; the server action confirms (or the page re-renders with the real state).
+  const [optimisticDone, setOptimisticDone] = useOptimistic(done);
   const [pending, start] = useTransition();
   return (
     <input
       type="checkbox"
-      aria-label={done ? `Mark "${title}" as not done` : `Mark "${title}" as done`}
-      checked={done}
-      disabled={pending}
+      aria-label={optimisticDone ? `Mark "${title}" as not done` : `Mark "${title}" as done`}
+      checked={optimisticDone}
+      aria-busy={pending}
       onChange={(e) => {
         const next = e.currentTarget.checked;
-        start(() => toggleTask(id, next));
+        start(async () => {
+          setOptimisticDone(next);
+          await toggleTask(id, next);
+        });
       }}
     />
   );

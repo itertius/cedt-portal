@@ -1,11 +1,16 @@
 import { authConfigured } from "@/lib/auth";
+import { credentialUserIds } from "@/lib/connectors/credentials";
+import { gcalUserIds, syncGcal } from "@/lib/sync/gcal";
+import { syncGrader } from "@/lib/sync/grader";
+import { syncIntern } from "@/lib/sync/intern";
 import { mcvUserIds, syncMcv } from "@/lib/sync/mcv";
+import { syncTalent } from "@/lib/sync/talent";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
 
 /**
- * Daily background sync for every MCV user.
+ * Daily background sync (MCV + Google Calendar) for every connected user. Always a full sync.
  * Vercel Cron calls this with `Authorization: Bearer $CRON_SECRET`. On the club server, call it
  * the same way from a system cron.
  */
@@ -16,11 +21,30 @@ export async function GET(request: Request) {
   }
   if (!authConfigured) return Response.json({ error: "not configured" }, { status: 503 });
 
-  const summary = { users: 0, ok: 0, skipped: 0, error: 0 };
+  type Counts = { users: number; ok: number; skipped: number; error: number };
+  const empty = (): Counts => ({ users: 0, ok: 0, skipped: 0, error: 0 });
+  const summary = {
+    mcv: empty(),
+    gcal: empty(),
+    grader: empty(),
+    intern: empty(),
+    talent: (await syncTalent({ force: true })).status,
+  };
   for (const userId of await mcvUserIds()) {
-    summary.users++;
-    const r = await syncMcv(userId);
-    summary[r.status]++;
+    summary.mcv.users++;
+    summary.mcv[(await syncMcv(userId, { force: true })).status]++;
+  }
+  for (const userId of await gcalUserIds()) {
+    summary.gcal.users++;
+    summary.gcal[(await syncGcal(userId, { force: true })).status]++;
+  }
+  for (const userId of await credentialUserIds("grader")) {
+    summary.grader.users++;
+    summary.grader[(await syncGrader(userId, { force: true })).status]++;
+  }
+  for (const userId of await credentialUserIds("intern")) {
+    summary.intern.users++;
+    summary.intern[(await syncIntern(userId, { force: true })).status]++;
   }
   return Response.json(summary);
 }

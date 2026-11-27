@@ -3,7 +3,11 @@ import { schema } from "@cedt-hub/db";
 import { eq } from "@cedt-hub/db/orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { getDb } from "../db";
-import { acquireLock, releaseLock, saveMcvSnapshot } from "./mcv";
+import { acquireLock as lock, releaseLock as unlock } from "./lock";
+import { saveMcvSnapshot } from "./mcv";
+
+const acquireLock = (u: string) => lock(u, "mcv");
+const releaseLock = (u: string, e: string | null) => unlock(u, "mcv", e);
 
 // Runs only against a real, migrated database. Skipped locally without one; required in CI.
 if (process.env.CI && !process.env.DATABASE_URL) {

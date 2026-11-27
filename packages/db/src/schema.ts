@@ -1,5 +1,6 @@
 import {
   boolean,
+  doublePrecision,
   index,
   integer,
   pgEnum,
@@ -89,6 +90,7 @@ export const verification = pgTable(
 
 export const sourceEnum = pgEnum("source", [
   "mcv",
+  "hub",
   "grader",
   "talent",
   "intern",
@@ -139,6 +141,162 @@ export const task = pgTable(
   (t) => [
     uniqueIndex("task_user_source_idx").on(t.userId, t.source, t.sourceId),
     index("task_user_due_idx").on(t.userId, t.dueAt),
+  ],
+);
+
+/** Calendar events: created in the hub (source "hub") or pulled from a calendar (e.g. "gcal"). */
+export const event = pgTable(
+  "event",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    // No DB default: Postgres cannot use a just-added enum value in the same migration.
+    source: sourceEnum("source").notNull(),
+    /** Id in the source system; null for hub-created events. */
+    sourceId: text("source_id"),
+    courseId: uuid("course_id").references(() => course.id, { onDelete: "set null" }),
+    title: text("title").notNull(),
+    description: text("description"),
+    location: text("location"),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+    allDay: boolean("all_day").notNull().default(false),
+    url: text("url"),
+    // Two-way Google sync for hub-created events.
+    /** Google event id once this hub event has been pushed. */
+    remoteId: text("remote_id"),
+    /** Google's `updated` value after our last push/pull; a different value means it was edited there. */
+    remoteUpdated: text("remote_updated"),
+    /** When we last pushed this event. If updatedAt is newer, it has local changes to push. */
+    pushedAt: timestamp("pushed_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [
+    uniqueIndex("event_user_source_idx").on(t.userId, t.source, t.sourceId),
+    index("event_user_starts_idx").on(t.userId, t.startsAt),
+  ],
+);
+
+/** Markdown notes, optionally linked to a course or a calendar event. */
+export const note = pgTable(
+  "note",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    title: text("title").notNull().default(""),
+    body: text("body").notNull().default(""),
+    courseId: uuid("course_id").references(() => course.id, { onDelete: "set null" }),
+    eventId: uuid("event_id").references(() => event.id, { onDelete: "set null" }),
+    pinned: boolean("pinned").notNull().default(false),
+    ...timestamps,
+  },
+  (t) => [
+    index("note_user_updated_idx").on(t.userId, t.updatedAt),
+    // Substring search via pg_trgm (migration 0004 creates the extension).
+    index("note_title_trgm_idx").using("gin", t.title.op("gin_trgm_ops")),
+    index("note_body_trgm_idx").using("gin", t.body.op("gin_trgm_ops")),
+  ],
+);
+
+/**
+ * Talent Journey activities (career talks, workshops). Public data, the same for everyone,
+ * so it is stored once rather than per user.
+ */
+export const talentActivity = pgTable(
+  "talent_activity",
+  {
+    activityId: integer("activity_id").primaryKey(),
+    name: text("name").notNull(),
+    organization: text("organization"),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+    status: text("status"),
+    participants: integer("participants"),
+    maxParticipants: integer("max_participants"),
+    posterUrl: text("poster_url"),
+    ...timestamps,
+  },
+  (t) => [index("talent_activity_starts_idx").on(t.startsAt)],
+);
+
+/** Small key/value store for app-wide state (e.g. when a public feed was last fetched). */
+export const appState = pgTable("app_state", {
+  key: text("key").primaryKey(),
+  value: text("value"),
+  ...timestamps,
+});
+
+/**
+ * Credentials for platforms without OAuth (Grader JWT, Intern Portal session cookie).
+ * `secret` is AES-256-GCM encrypted (apps/web/lib/crypto.ts). Passwords are never stored.
+ */
+export const connectorCredential = pgTable(
+  "connector_credential",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    source: sourceEnum("source").notNull(),
+    secret: text("secret").notNull(),
+    /** Who the credential belongs to on the platform, e.g. the grader login. Shown in Settings. */
+    label: text("label"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.source] })],
+);
+
+/** The user's CEDT Grader problems with their best score (one row per problem). */
+export const graderProblem = pgTable(
+  "grader_problem",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    problemId: integer("problem_id").notNull(),
+    name: text("name").notNull(),
+    fullName: text("full_name"),
+    bestScore: doublePrecision("best_score"),
+    lastScore: doublePrecision("last_score"),
+    submissionCount: integer("submission_count").notNull().default(0),
+    lastSubmittedAt: timestamp("last_submitted_at", { withTimezone: true }),
+    tags: text("tags").array().notNull().default([]),
+    ...timestamps,
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.problemId] })],
+);
+
+/** CEDT Intern Portal openings of the user's current internship session. */
+export const internship = pgTable(
+  "internship",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    openingId: integer("opening_id").notNull(),
+    sessionId: integer("session_id").notNull(),
+    title: text("title").notNull(),
+    company: text("company").notNull(),
+    logoUrl: text("logo_url"),
+    tags: text("tags").array().notNull().default([]),
+    workingCondition: text("working_condition"),
+    compensation: integer("compensation"),
+    compensationType: text("compensation_type"),
+    quota: integer("quota"),
+    startDate: text("start_date"),
+    endDate: text("end_date"),
+    bookmarked: boolean("bookmarked").notNull().default(false),
+    acceptingApplications: boolean("accepting_applications").notNull().default(true),
+    url: text("url").notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.openingId] }),
+    index("internship_user_comp_idx").on(t.userId, t.compensation),
   ],
 );
 

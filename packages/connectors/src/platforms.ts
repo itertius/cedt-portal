@@ -1,7 +1,7 @@
 import type { Source } from "./types";
 
 export interface Platform {
-  id: Exclude<Source, "gcal">;
+  id: Exclude<Source, "gcal" | "hub">;
   name: string;
   /** Where "Open" takes the user. */
   url: string;

@@ -1,8 +1,11 @@
 import Link from "next/link";
 import { after } from "next/server";
+import { Nav } from "@/components/nav";
 import { getSession } from "@/lib/auth";
 import { getDashboard } from "@/lib/dashboard";
 import { commitSha, deployEnv } from "@/lib/env";
+import { syncGrader } from "@/lib/sync/grader";
+import { syncIntern } from "@/lib/sync/intern";
 import { MCV_STALE_AFTER_MS, syncMcv } from "@/lib/sync/mcv";
 import { Dashboard } from "./dashboard";
 import { SignOutButton } from "./sign-out-button";
@@ -36,9 +39,16 @@ export default async function Home() {
     // Refresh in the background after the response is sent; the next visit shows new data.
     after(() => syncMcv(session.user.id));
   }
+  // Grader and Intern Portal skip themselves when not connected or synced recently.
+  const uid = session.user.id;
+  after(async () => {
+    await syncGrader(uid);
+    await syncIntern(uid);
+  });
 
   return (
     <main className="shell wide">
+      <Nav active="/" />
       <Dashboard name={session.user.name} data={data} />
       <div className="stack">
         <SignOutButton />

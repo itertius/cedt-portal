@@ -141,3 +141,322 @@ a {
   align-items: baseline;
   gap: 0.4rem;
 }
+
+.nav {
+  display: flex;
+  gap: 1rem;
+  align-items: baseline;
+  margin-bottom: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid color-mix(in srgb, CanvasText 15%, transparent);
+}
+
+.nav .brand {
+  font-weight: 700;
+  margin-right: auto;
+}
+
+.nav a {
+  text-decoration: none;
+}
+
+.nav a[aria-current="page"] {
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+.cal-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.cal-controls {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 1px;
+  margin: 1rem 0 1.5rem;
+  background: color-mix(in srgb, CanvasText 12%, transparent);
+  border: 1px solid color-mix(in srgb, CanvasText 12%, transparent);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.cal-dow {
+  background: Canvas;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.cal-day {
+  background: Canvas;
+  padding: 0.4rem;
+  min-height: 6rem;
+  font-size: 0.8rem;
+}
+
+.cal-grid.week .cal-day {
+  min-height: 14rem;
+}
+
+.cal-day.outside {
+  opacity: 0.45;
+}
+
+.cal-date {
+  display: block;
+  margin-bottom: 0.3rem;
+  text-decoration: none;
+}
+
+.cal-day.today .cal-date {
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+.cal-day ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.cal-item {
+  border-left: 3px solid currentColor;
+  padding-left: 0.35rem;
+  overflow-wrap: anywhere;
+}
+
+.cal-item a {
+  text-decoration: none;
+}
+
+.cal-item.task {
+  border-left-style: dashed;
+}
+
+.cal-item.source-mcv {
+  border-left-color: #1e88e5;
+}
+
+.cal-item.source-hub {
+  border-left-color: #43a047;
+}
+
+.cal-item.done {
+  text-decoration: line-through;
+  opacity: 0.55;
+}
+
+.small {
+  font-size: 0.75rem;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.875rem;
+}
+
+.form label.check {
+  flex-direction: row;
+  align-items: center;
+}
+
+.form .row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.form input:not([type="checkbox"]),
+.form select,
+.form textarea {
+  font: inherit;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid color-mix(in srgb, CanvasText 30%, transparent);
+  border-radius: 0.4rem;
+  background: Canvas;
+  color: CanvasText;
+}
+
+@media (max-width: 640px) {
+  .cal-grid.week {
+    grid-template-columns: 1fr;
+  }
+  .cal-grid.week .cal-dow {
+    display: none;
+  }
+  .cal-grid.week .cal-day {
+    min-height: auto;
+  }
+}
+
+.cal-item.source-gcal {
+  border-left-color: #8e24aa;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0.5rem 0 0;
+}
+
+.swatch {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 0.2rem;
+  margin-left: 0.4rem;
+}
+
+.swatch.mcv {
+  background: #1e88e5;
+}
+
+.swatch.hub {
+  background: #43a047;
+}
+
+.swatch.gcal {
+  background: #8e24aa;
+}
+
+.search {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin: 1rem 0;
+}
+
+.search-field {
+  font: inherit;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid color-mix(in srgb, CanvasText 30%, transparent);
+  border-radius: 0.4rem;
+  background: Canvas;
+  color: CanvasText;
+}
+
+.search-field[type="search"] {
+  flex: 1 1 14rem;
+}
+
+.note-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.note-link {
+  text-decoration: none;
+  display: block;
+}
+
+.note-list .card p {
+  margin: 0.35rem 0 0;
+}
+
+.note-editor .note-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+}
+
+.note-editor textarea {
+  font-family: ui-monospace, monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.tabs button {
+  font: inherit;
+  padding: 0.3rem 0.8rem;
+  border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
+  border-radius: 0.4rem 0.4rem 0 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.tabs button[aria-selected="true"] {
+  background: color-mix(in srgb, CanvasText 10%, transparent);
+  font-weight: 600;
+}
+
+.markdown {
+  border: 1px solid color-mix(in srgb, CanvasText 15%, transparent);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  overflow-wrap: anywhere;
+}
+
+.markdown pre {
+  overflow-x: auto;
+  padding: 0.75rem;
+  border-radius: 0.4rem;
+  background: color-mix(in srgb, CanvasText 8%, transparent);
+}
+
+.markdown table {
+  border-collapse: collapse;
+}
+
+.markdown th,
+.markdown td {
+  border: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
+  padding: 0.3rem 0.6rem;
+}
+
+.danger-zone {
+  margin-top: 1rem;
+}
+
+.cal-item.source-talent {
+  border-left-color: #f4511e;
+}
+
+.swatch.talent {
+  background: #f4511e;
+}
+
+.task.activity {
+  grid-template-columns: auto 1fr auto;
+}
+
+.internship .tag {
+  margin-right: 0.3rem;
+}
+
+details summary {
+  cursor: pointer;
+}
