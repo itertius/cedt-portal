@@ -1,9 +1,13 @@
 import { redirect } from "next/navigation";
 import { Nav } from "@/components/nav";
 import { getSession, googleEnabled } from "@/lib/auth";
+import { credentialInfo } from "@/lib/connectors/credentials";
 import { relative } from "@/lib/format";
 import { googleAccountId } from "@/lib/sync/gcal";
+import { graderSummary } from "@/lib/sync/grader";
+import { internshipCount } from "@/lib/sync/intern";
 import { getSyncState } from "@/lib/sync/lock";
+import { ConnectorControls, GraderConnectForm, InternConnectForm } from "./connector-forms";
 import { ConnectGoogleButton, GoogleSyncControls } from "./google-controls";
 
 export const dynamic = "force-dynamic";
@@ -18,11 +22,20 @@ export default async function SettingsPage({
   const userId = session.user.id;
   const { error } = await searchParams;
 
-  const [googleLinked, mcv, gcal] = await Promise.all([
+  const [googleLinked, mcv, gcal, grader, graderState, intern, internState] = await Promise.all([
     googleAccountId(userId),
     getSyncState(userId, "mcv"),
     getSyncState(userId, "gcal"),
+    credentialInfo(userId, "grader"),
+    getSyncState(userId, "grader"),
+    credentialInfo(userId, "intern"),
+    getSyncState(userId, "intern"),
   ]);
+  const [graderStats, internships] = await Promise.all([
+    grader ? graderSummary(userId) : null,
+    intern ? internshipCount(userId) : 0,
+  ]);
+  const graderExpired = Boolean(grader?.expiresAt && grader.expiresAt <= new Date());
   const status = (s: typeof mcv) =>
     s?.status === "error"
       ? null
@@ -77,6 +90,64 @@ export default async function SettingsPage({
               ahead are synced.
             </p>
             <ConnectGoogleButton />
+          </div>
+        )}
+      </section>
+
+      <section className="card" id="grader">
+        <h2>CEDT Grader</h2>
+        {grader ? (
+          <div className="stack">
+            <p>
+              Connected as <strong>{grader.label}</strong>.{" "}
+              {graderStats ? `${graderStats.total} problems, ${graderStats.solved} solved. ` : null}
+              <span className="muted">{status(graderState)}</span>
+              {grader.expiresAt ? (
+                <span className="muted">
+                  {" "}
+                  · access {graderExpired ? "expired" : "expires"} {relative(grader.expiresAt)}
+                </span>
+              ) : null}
+            </p>
+            {graderState?.status === "error" ? (
+              <p className="error">{graderState.lastError}</p>
+            ) : null}
+            {graderExpired || graderState?.status === "error" ? (
+              <GraderConnectForm reconnect />
+            ) : null}
+            <ConnectorControls source="grader" label="CEDT Grader" />
+          </div>
+        ) : (
+          <div className="stack">
+            <p>See your solved and in-progress grader problems on the dashboard.</p>
+            <GraderConnectForm />
+          </div>
+        )}
+      </section>
+
+      <section className="card" id="intern">
+        <h2>CEDT Intern Portal</h2>
+        {intern ? (
+          <div className="stack">
+            <p>
+              Connected. {internships} openings synced.{" "}
+              <span className="muted">{status(internState)}</span>
+            </p>
+            {internState?.status === "error" ? (
+              <>
+                <p className="error">{internState.lastError}</p>
+                <InternConnectForm reconnect />
+              </>
+            ) : null}
+            <ConnectorControls source="intern" label="the Intern Portal" />
+          </div>
+        ) : (
+          <div className="stack">
+            <p>
+              Browse every opening sorted by pay, see your bookmarks, and get ranking deadlines on
+              your calendar.
+            </p>
+            <InternConnectForm />
           </div>
         )}
       </section>

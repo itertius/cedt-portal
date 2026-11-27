@@ -6,8 +6,9 @@ test.describe
   .serial("Phase 2 · Google Calendar sync", () => {
     const syncNow = async (page: import("@playwright/test").Page) => {
       await page.goto("/settings");
-      await page.getByRole("button", { name: "Sync now" }).click();
-      await expect(page.getByRole("status").filter({ hasText: /Synced:/ })).toBeVisible();
+      const google = page.locator("section#google");
+      await google.getByRole("button", { name: "Sync now" }).click();
+      await expect(google.getByRole("status").filter({ hasText: /Synced:/ })).toBeVisible();
     };
     const week = (day = bkkDay(1)) => `/calendar?view=week&date=${day}`;
 
@@ -134,7 +135,7 @@ test.describe
       });
       await page.goto("/settings");
       page.once("dialog", (d) => d.accept());
-      await page.getByRole("button", { name: "Disconnect" }).click();
+      await page.locator("section#google").getByRole("button", { name: "Disconnect" }).click();
       await expect(page.getByRole("button", { name: "Connect Google Calendar" })).toBeVisible();
       await page.goto(week(bkkDay(3)));
       await expect(page.locator(".cal-item.source-gcal")).toHaveCount(0);

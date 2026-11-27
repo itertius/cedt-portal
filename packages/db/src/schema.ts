@@ -1,5 +1,6 @@
 import {
   boolean,
+  doublePrecision,
   index,
   integer,
   pgEnum,
@@ -228,6 +229,76 @@ export const appState = pgTable("app_state", {
   value: text("value"),
   ...timestamps,
 });
+
+/**
+ * Credentials for platforms without OAuth (Grader JWT, Intern Portal session cookie).
+ * `secret` is AES-256-GCM encrypted (apps/web/lib/crypto.ts). Passwords are never stored.
+ */
+export const connectorCredential = pgTable(
+  "connector_credential",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    source: sourceEnum("source").notNull(),
+    secret: text("secret").notNull(),
+    /** Who the credential belongs to on the platform, e.g. the grader login. Shown in Settings. */
+    label: text("label"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.source] })],
+);
+
+/** The user's CEDT Grader problems with their best score (one row per problem). */
+export const graderProblem = pgTable(
+  "grader_problem",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    problemId: integer("problem_id").notNull(),
+    name: text("name").notNull(),
+    fullName: text("full_name"),
+    bestScore: doublePrecision("best_score"),
+    lastScore: doublePrecision("last_score"),
+    submissionCount: integer("submission_count").notNull().default(0),
+    lastSubmittedAt: timestamp("last_submitted_at", { withTimezone: true }),
+    tags: text("tags").array().notNull().default([]),
+    ...timestamps,
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.problemId] })],
+);
+
+/** CEDT Intern Portal openings of the user's current internship session. */
+export const internship = pgTable(
+  "internship",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    openingId: integer("opening_id").notNull(),
+    sessionId: integer("session_id").notNull(),
+    title: text("title").notNull(),
+    company: text("company").notNull(),
+    logoUrl: text("logo_url"),
+    tags: text("tags").array().notNull().default([]),
+    workingCondition: text("working_condition"),
+    compensation: integer("compensation"),
+    compensationType: text("compensation_type"),
+    quota: integer("quota"),
+    startDate: text("start_date"),
+    endDate: text("end_date"),
+    bookmarked: boolean("bookmarked").notNull().default(false),
+    acceptingApplications: boolean("accepting_applications").notNull().default(true),
+    url: text("url").notNull(),
+    ...timestamps,
+  },
+  (t) => [
+    primaryKey({ columns: [t.userId, t.openingId] }),
+    index("internship_user_comp_idx").on(t.userId, t.compensation),
+  ],
+);
 
 export const syncState = pgTable(
   "sync_state",

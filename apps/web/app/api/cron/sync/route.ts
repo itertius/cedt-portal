@@ -1,5 +1,8 @@
 import { authConfigured } from "@/lib/auth";
+import { credentialUserIds } from "@/lib/connectors/credentials";
 import { gcalUserIds, syncGcal } from "@/lib/sync/gcal";
+import { syncGrader } from "@/lib/sync/grader";
+import { syncIntern } from "@/lib/sync/intern";
 import { mcvUserIds, syncMcv } from "@/lib/sync/mcv";
 import { syncTalent } from "@/lib/sync/talent";
 
@@ -23,6 +26,8 @@ export async function GET(request: Request) {
   const summary = {
     mcv: empty(),
     gcal: empty(),
+    grader: empty(),
+    intern: empty(),
     talent: (await syncTalent({ force: true })).status,
   };
   for (const userId of await mcvUserIds()) {
@@ -32,6 +37,14 @@ export async function GET(request: Request) {
   for (const userId of await gcalUserIds()) {
     summary.gcal.users++;
     summary.gcal[(await syncGcal(userId, { force: true })).status]++;
+  }
+  for (const userId of await credentialUserIds("grader")) {
+    summary.grader.users++;
+    summary.grader[(await syncGrader(userId, { force: true })).status]++;
+  }
+  for (const userId of await credentialUserIds("intern")) {
+    summary.intern.users++;
+    summary.intern[(await syncIntern(userId, { force: true })).status]++;
   }
   return Response.json(summary);
 }

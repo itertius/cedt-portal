@@ -96,3 +96,17 @@ export async function setTalentFeed(request: APIRequestContext, activities: obje
     true,
   );
 }
+
+/** Read rows straight from the test database (for checks the UI cannot show, like encryption). */
+export async function dbQuery<T extends Record<string, unknown>>(
+  query: string,
+  params: unknown[] = [],
+) {
+  const { default: postgres } = await import("postgres");
+  const sql = postgres(E2E.databaseURL, { max: 1, onnotice: () => {} });
+  try {
+    return (await sql.unsafe(query, params as never[])) as unknown as T[];
+  } finally {
+    await sql.end();
+  }
+}
