@@ -5,12 +5,14 @@ import { Nav } from "@/components/nav";
 import { CEDT_PROVIDER_ID, cedtEnabled, getSession, googleEnabled } from "@/lib/auth";
 import { credentialInfo } from "@/lib/connectors/credentials";
 import { getDb } from "@/lib/db";
+import { listExtensionTokens } from "@/lib/extension/tokens";
 import { relative } from "@/lib/format";
 import { googleAccountId } from "@/lib/sync/gcal";
 import { graderSummary } from "@/lib/sync/grader";
 import { internshipCount } from "@/lib/sync/intern";
 import { getSyncState } from "@/lib/sync/lock";
 import { ConnectorControls, GraderConnectForm, InternConnectForm } from "./connector-forms";
+import { revokeExtensionAction } from "./extension-actions";
 import { ConnectGoogleButton, GoogleSyncControls, LinkAccountButton } from "./google-controls";
 
 export const dynamic = "force-dynamic";
@@ -34,9 +36,10 @@ export default async function SettingsPage({
     credentialInfo(userId, "intern"),
     getSyncState(userId, "intern"),
   ]);
-  const [graderStats, internships] = await Promise.all([
+  const [graderStats, internships, extensions] = await Promise.all([
     grader ? graderSummary(userId) : null,
     intern ? internshipCount(userId) : 0,
+    listExtensionTokens(userId),
   ]);
   const [cedtAccount] = cedtEnabled
     ? await getDb()
@@ -174,6 +177,36 @@ export default async function SettingsPage({
             </p>
             <InternConnectForm />
           </div>
+        )}
+      </section>
+
+      <section className="card" id="extension">
+        <h2>Browser extension</h2>
+        {extensions.length === 0 ? (
+          <p className="muted">
+            The CEDT Hub extension keeps your Intern Portal session synced automatically, so you
+            never paste a cookie again. Install it, click its icon, then{" "}
+            <strong>Connect to CEDT Hub</strong>.
+          </p>
+        ) : (
+          <ul className="apps">
+            {extensions.map((x) => (
+              <li key={x.id}>
+                <strong>{x.label ?? "Browser"}</strong>
+                <span className="muted">
+                  {" "}
+                  · connected {relative(x.createdAt)}
+                  {x.lastUsedAt ? ` · last update ${relative(x.lastUsedAt)}` : " · not used yet"}
+                </span>
+                <form action={revokeExtensionAction} className="inline">
+                  <input type="hidden" name="id" value={x.id} />
+                  <button type="submit" className="button secondary small">
+                    Disconnect
+                  </button>
+                </form>
+              </li>
+            ))}
+          </ul>
         )}
       </section>
     </main>

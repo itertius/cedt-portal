@@ -27,7 +27,11 @@ export type InternSyncResult =
 export class InvalidCookieError extends Error {}
 
 /** Validate the pasted cookie against the portal, then store it encrypted. */
-export async function connectIntern(userId: string, rawCookie: string) {
+export async function connectIntern(
+  userId: string,
+  rawCookie: string,
+  label = "Intern Portal session",
+) {
   const cookie = cleanCookieHeader(rawCookie);
   if (!cookie)
     throw new InvalidCookieError(
@@ -44,7 +48,7 @@ export async function connectIntern(userId: string, rawCookie: string) {
     }
     throw err;
   }
-  await saveCredential(userId, "intern", cookie, { label: "Intern Portal session" });
+  await saveCredential(userId, "intern", cookie, { label });
   return syncIntern(userId, { force: true });
 }
 

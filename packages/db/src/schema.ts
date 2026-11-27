@@ -300,6 +300,23 @@ export const internship = pgTable(
   ],
 );
 
+/** Tokens for the CEDT Hub browser extension. Only a SHA-256 hash is stored. */
+export const extensionToken = pgTable(
+  "extension_token",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull().unique(),
+    /** Browser description from the pairing page, e.g. "Chrome on macOS". */
+    label: text("label"),
+    lastUsedAt: timestamp("last_used_at", { withTimezone: true }),
+    ...timestamps,
+  },
+  (t) => [index("extension_token_user_idx").on(t.userId)],
+);
+
 export const syncState = pgTable(
   "sync_state",
   {
