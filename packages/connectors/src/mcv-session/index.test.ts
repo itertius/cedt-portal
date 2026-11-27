@@ -96,6 +96,20 @@ describe("relative due dates", () => {
 });
 
 describe("course titles", () => {
+  it("decodes entities once (no double-unescaping)", () => {
+    expect(parseCourseTitle("Club &amp;quot;A&amp;quot; &amp; friends").title).toBe(
+      "Club &quot;A&quot; & friends",
+    );
+  });
+
+  it("stays fast on hostile input (no catastrophic backtracking)", () => {
+    const evil = `2110101 (2026/1) ${" ".repeat(50_000)}x[${"[".repeat(50_000)}`;
+    const t0 = performance.now();
+    parseCourseTitle(evil);
+    parsePanelHtml(`<div class="cv-item">${"du in ".repeat(20_000)}<strong>${"<".repeat(10)}`);
+    expect(performance.now() - t0).toBeLessThan(200);
+  });
+
   it("splits code, term and name, dropping the section", () => {
     expect(
       parseCourseTitle("2110506 (2026/1) Software-Defined Systems I [Section 51 - 55]"),

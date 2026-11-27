@@ -56,15 +56,16 @@ const isAscii = (s: string) => [...s].every((c) => c.charCodeAt(0) < 128);
 /** Present on MCV pages only when logged in. */
 const LOGGED_IN_MARKER = "courseville-usermenutrigger";
 
+/** Decode the few HTML entities MCV uses. "&amp;" goes last so "&amp;quot;" stays "&quot;". */
 const decode = (s: string) =>
   s
-    .replace(/&amp;/g, "&")
     .replace(/&quot;/g, '"')
     .replace(/&#0?39;/g, "'")
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&ldquo;|&rdquo;/g, "")
-    .replace(/&nbsp;/g, " ");
+    .replace(/&nbsp;/g, " ")
+    .replace(/&amp;/g, "&");
 
 /** Find the login form and every field it would submit. */
 export function parseLoginForm(html: string, pageUrl: string) {
@@ -173,10 +174,12 @@ export interface McvPanelItem {
   url: string;
 }
 
-const LINK_RE = /href="([^"]*\?q=courseville\/worksheet\/(\d+)\/(\d+)[^"]*)"/;
+// Every pattern below is linear: no nested or overlapping quantifiers (safe on any HTML).
+const LINK_RE = /\?q=courseville\/worksheet\/(\d+)\/(\d+)/;
 const BADGE_RE = /cvui-course-badge">([^<]+)</;
-const TITLE_RE = /<strong>(?:&ldquo;|["“])?([^<]*?)(?:&rdquo;|["”])?<\/strong>/;
-const DUE_RE = /du\w*\s+in\s*<strong>([^<]+)<\/strong>/i;
+const TITLE_RE = /<strong>([^<]*)<\/strong>/;
+const DUE_RE = /\bdu[a-z]*\sin\s?<strong>([^<]*)<\/strong>/i;
+const stripQuotes = (t: string) => t.replace(/^["“]/, "").replace(/["”]$/, "");
 
 /** The panel is an HTML fragment of <div class="cv-item"> blocks; the first is a summary line. */
 export function parsePanelHtml(html: string): McvPanelItem[] {
@@ -185,14 +188,14 @@ export function parsePanelHtml(html: string): McvPanelItem[] {
   for (const block of html.split('<div class="cv-item">').slice(1)) {
     const link = LINK_RE.exec(block);
     if (!link) continue;
-    const [, , cvCid = "", itemId = ""] = link;
+    const [, cvCid = "", itemId = ""] = link;
     if (seen.has(itemId)) continue;
     seen.add(itemId);
     out.push({
       courseCode: decode(BADGE_RE.exec(block)?.[1] ?? "").trim(),
       cvCid,
       itemId,
-      title: decode(TITLE_RE.exec(block)?.[1] ?? "").trim() || "Untitled item",
+      title: stripQuotes(decode(TITLE_RE.exec(block)?.[1] ?? "").trim()) || "Untitled item",
       dueText: decode(DUE_RE.exec(block)?.[1] ?? "").trim(),
       url: `${MCV_SITE}/?q=courseville/worksheet/${cvCid}/${itemId}`,
     });
@@ -250,13 +253,18 @@ export async function fetchPanel(jar: CookieJar, fetchImpl: typeof fetch = fetch
 
 /** "2110506 (2026/1) Software-Defined Systems I [Section 51 - 55]" -> code, year, semester, name. */
 export function parseCourseTitle(raw: string) {
-  const m = /^\s*(\d{7})\s*\((\d{4})\/(\d)\)\s*(.*?)\s*(?:\[.*\])?\s*$/.exec(decode(raw));
-  if (!m) return { code: null, year: null, semester: null, title: decode(raw).trim() };
+  const text = decode(raw).trim();
+  const m = /^(\d{7}) ?\((\d{4})\/(\d)\)/.exec(text);
+  if (!m) return { code: null, year: null, semester: null, title: text };
+  let rest = text.slice(m[0].length).trim();
+  // Drop a trailing "[Section …]".
+  const bracket = rest.lastIndexOf("[");
+  if (bracket >= 0 && rest.endsWith("]")) rest = rest.slice(0, bracket).trim();
   return {
     code: m[1] ?? null,
     year: Number(m[2]),
     semester: Number(m[3]),
-    title: (m[4] ?? "").trim() || (m[1] ?? ""),
+    title: rest || (m[1] ?? ""),
   };
 }
 
