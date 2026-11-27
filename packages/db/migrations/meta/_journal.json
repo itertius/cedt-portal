@@ -43,6 +43,13 @@
       "when": 1795734584485,
       "tag": "0005_notes",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1795738228686,
+      "tag": "0006_talent",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,7 @@
 import { authConfigured } from "@/lib/auth";
 import { gcalUserIds, syncGcal } from "@/lib/sync/gcal";
 import { mcvUserIds, syncMcv } from "@/lib/sync/mcv";
+import { syncTalent } from "@/lib/sync/talent";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -19,7 +20,11 @@ export async function GET(request: Request) {
 
   type Counts = { users: number; ok: number; skipped: number; error: number };
   const empty = (): Counts => ({ users: 0, ok: 0, skipped: 0, error: 0 });
-  const summary = { mcv: empty(), gcal: empty() };
+  const summary = {
+    mcv: empty(),
+    gcal: empty(),
+    talent: (await syncTalent({ force: true })).status,
+  };
   for (const userId of await mcvUserIds()) {
     summary.mcv.users++;
     summary.mcv[(await syncMcv(userId, { force: true })).status]++;

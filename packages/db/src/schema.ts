@@ -201,6 +201,34 @@ export const note = pgTable(
   ],
 );
 
+/**
+ * Talent Journey activities (career talks, workshops). Public data, the same for everyone,
+ * so it is stored once rather than per user.
+ */
+export const talentActivity = pgTable(
+  "talent_activity",
+  {
+    activityId: integer("activity_id").primaryKey(),
+    name: text("name").notNull(),
+    organization: text("organization"),
+    startsAt: timestamp("starts_at", { withTimezone: true }).notNull(),
+    endsAt: timestamp("ends_at", { withTimezone: true }).notNull(),
+    status: text("status"),
+    participants: integer("participants"),
+    maxParticipants: integer("max_participants"),
+    posterUrl: text("poster_url"),
+    ...timestamps,
+  },
+  (t) => [index("talent_activity_starts_idx").on(t.startsAt)],
+);
+
+/** Small key/value store for app-wide state (e.g. when a public feed was last fetched). */
+export const appState = pgTable("app_state", {
+  key: text("key").primaryKey(),
+  value: text("value"),
+  ...timestamps,
+});
+
 export const syncState = pgTable(
   "sync_state",
   {

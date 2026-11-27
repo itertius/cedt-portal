@@ -20,6 +20,7 @@ import {
 } from "@/lib/calendar/time";
 import { GCAL_STALE_AFTER_MS, googleAccountId, syncGcal } from "@/lib/sync/gcal";
 import { getSyncState } from "@/lib/sync/lock";
+import { syncTalent } from "@/lib/sync/talent";
 import { EventForm } from "./event-form";
 
 export const dynamic = "force-dynamic";
@@ -111,6 +112,8 @@ export default async function CalendarPage({
   if (googleLinked && gcalStale && gcalState?.status !== "running") {
     after(() => syncGcal(userId));
   }
+  // Public Talent Journey feed; syncTalent itself skips if fetched within the hour.
+  after(() => syncTalent());
   const byDay = groupByDay(items);
 
   const prev = view === "month" ? addMonths(anchor, -1) : addDays(anchor, -7);
@@ -145,7 +148,8 @@ export default async function CalendarPage({
 
       <p className="muted small legend">
         <span className="swatch mcv" /> MCV deadline <span className="swatch hub" /> Your event{" "}
-        <span className="swatch gcal" /> Google Calendar ·{" "}
+        <span className="swatch gcal" /> Google Calendar <span className="swatch talent" /> Talent
+        Journey ·{" "}
         {googleLinked ? (
           gcalState?.status === "error" ? (
             <Link href="/settings" className="error">

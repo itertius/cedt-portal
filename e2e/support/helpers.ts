@@ -89,3 +89,10 @@ export async function openEvent(page: Page, title: string | RegExp) {
   await page.locator(".cal-item.source-hub").filter({ hasText: title }).getByRole("link").click();
   await expect(page.getByRole("heading", { name: "Edit event" })).toBeVisible();
 }
+
+/** Replace the mock Talent Journey feed. */
+export async function setTalentFeed(request: APIRequestContext, activities: object[]) {
+  expect((await request.put(`${E2E.talentURL}/__test/activities`, { data: activities })).ok()).toBe(
+    true,
+  );
+}
