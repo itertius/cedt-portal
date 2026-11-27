@@ -38,6 +38,7 @@ export const E2E = {
     GOOGLE_CLIENT_SECRET: "e2e-google",
     GOOGLE_BASE_URL: `http://localhost:${googlePort}`,
     CRON_SECRET: "e2e-cron-secret",
+    ALLOWED_EMAILS: "owner@example.com, @invited.test",
     TALENT_BASE_URL: `http://localhost:${talentPort}`,
     GRADER_BASE_URL: `http://localhost:${graderPort}`,
     INTERN_BASE_URL: `http://localhost:${internPort}`,

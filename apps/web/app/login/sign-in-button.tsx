@@ -22,7 +22,12 @@ function ProviderSignInButton({
   async function signIn() {
     setPending(true);
     setError(null);
-    const { error } = await authClient.signIn.social({ provider, callbackURL: "/" });
+    const { error } = await authClient.signIn.social({
+      provider,
+      callbackURL: "/",
+      // Rejected sign-ups (e.g. a Google account that is not invited) come back here.
+      errorCallbackURL: "/login",
+    });
     if (error) {
       setError(error.message ?? "Sign-in failed. Try again.");
       setPending(false);
@@ -73,6 +78,24 @@ export function CedtSignInButton({ disabled }: { disabled: boolean }) {
       label="Log in with CEDT"
       pendingLabel="Redirecting to CEDT…"
       disabled={disabled}
+    />
+  );
+}
+
+export function GoogleSignInButton({
+  disabled,
+  secondary,
+}: {
+  disabled: boolean;
+  secondary?: boolean;
+}) {
+  return (
+    <ProviderSignInButton
+      provider="google"
+      label="Log in with Google"
+      pendingLabel="Redirecting to Google…"
+      disabled={disabled}
+      secondary={secondary}
     />
   );
 }
