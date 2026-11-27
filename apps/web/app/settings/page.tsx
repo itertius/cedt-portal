@@ -7,13 +7,17 @@ import { credentialInfo } from "@/lib/connectors/credentials";
 import { getDb } from "@/lib/db";
 import { listExtensionTokens } from "@/lib/extension/tokens";
 import { relative } from "@/lib/format";
+import { mcvPasswordSyncAllowed } from "@/lib/mcv/password-sync";
 import { googleAccountId } from "@/lib/sync/gcal";
 import { graderSummary } from "@/lib/sync/grader";
 import { internshipCount } from "@/lib/sync/intern";
 import { getSyncState } from "@/lib/sync/lock";
+import { hasMcvOAuthAccount } from "@/lib/sync/mcv";
+import { mcvPasswordLabel } from "@/lib/sync/mcv-session";
 import { ConnectorControls, GraderConnectForm, InternConnectForm } from "./connector-forms";
 import { revokeExtensionAction } from "./extension-actions";
 import { ConnectGoogleButton, GoogleSyncControls, LinkAccountButton } from "./google-controls";
+import { McvConnectForm, McvControls, McvUpdatePasswordForm } from "./mcv-forms";
 
 export const dynamic = "force-dynamic";
 
@@ -49,6 +53,11 @@ export default async function SettingsPage({
           and(eq(schema.account.userId, userId), eq(schema.account.providerId, CEDT_PROVIDER_ID)),
         )
     : [];
+  const [mcvOAuth, mcvLogin] = await Promise.all([
+    hasMcvOAuthAccount(userId),
+    mcvPasswordLabel(userId),
+  ]);
+  const mcvPasswordAllowed = mcvPasswordSyncAllowed(session.user.email);
   const graderExpired = Boolean(grader?.expiresAt && grader.expiresAt <= new Date());
   const status = (s: typeof mcv) =>
     s?.status === "error"
@@ -69,12 +78,36 @@ export default async function SettingsPage({
         </p>
       ) : null}
 
-      <section className="card">
+      <section className="card" id="mcv">
         <h2>MyCourseVille</h2>
-        <p>
-          Connected as <strong>{session.user.name}</strong>.{" "}
-          <span className="muted">{status(mcv)}</span>
-        </p>
+        {mcvOAuth ? (
+          <p>
+            Connected as <strong>{session.user.name}</strong>.{" "}
+            <span className="muted">{status(mcv)}</span>
+          </p>
+        ) : mcvLogin ? (
+          <div className="stack">
+            <p>
+              Connected with CUNET <strong>{mcvLogin.username}</strong>.{" "}
+              <span className="muted">{status(mcv)}</span>
+            </p>
+            {mcvLogin.blocked ? <McvUpdatePasswordForm /> : null}
+            <McvControls />
+            {mcvLogin.blocked ? null : (
+              <details>
+                <summary className="small">Changed your CUNET password?</summary>
+                <McvUpdatePasswordForm />
+              </details>
+            )}
+          </div>
+        ) : mcvPasswordAllowed ? (
+          <div className="stack">
+            <p>Sync your MyCourseVille courses and pending assignments with your CUNET login.</p>
+            <McvConnectForm />
+          </div>
+        ) : (
+          <p className="muted">MyCourseVille sync isn&apos;t available for this account yet.</p>
+        )}
         {mcv?.status === "error" ? <p className="error">{mcv.lastError}</p> : null}
       </section>
 

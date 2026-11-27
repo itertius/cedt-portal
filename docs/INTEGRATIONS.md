@@ -36,17 +36,62 @@ Better Auth's generic OAuth provider fits as-is, the same way MCV is wired today
 
 ## Method ranking (what we allow)
 
-| Rank | Method                                                                             | Allowed?                               |
-| ---- | ---------------------------------------------------------------------------------- | -------------------------------------- |
-| 1    | Official OAuth or API with our own client                                          | ✅ Preferred                           |
-| 2    | Public, unauthenticated endpoint the site itself uses                              | ✅ Cache it, poll politely             |
-| 3    | Token the user hands us (pasted, or exchanged once from a password we never store) | ✅ Encrypted, revocable, clear consent |
-| 4    | Browser extension reading pages and APIs of a session the user already has open    | ✅ Phase 4                             |
-| 5    | Storing a user's password and logging in headlessly for them                       | ❌ Never                               |
+| Rank | Method                                                                             | Allowed?                                                                                                             |
+| ---- | ---------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| 1    | Official OAuth or API with our own client                                          | ✅ Preferred                                                                                                         |
+| 2    | Public, unauthenticated endpoint the site itself uses                              | ✅ Cache it, poll politely                                                                                           |
+| 3    | Token the user hands us (pasted, or exchanged once from a password we never store) | ✅ Encrypted, revocable, clear consent                                                                               |
+| 4    | Browser extension reading pages and APIs of a session the user already has open    | ✅ Phase 4                                                                                                           |
+| 5    | Storing a user's password and logging in headlessly for them                       | ⚠️ **MyCourseVille only**, owner-approved (2026-11-27), behind `MCV_PASSWORD_SYNC_EMAILS`; never for other platforms |
 
 Rank 5 is what [campksk/cedt-intern-sorting](https://github.com/campksk/cedt-intern-sorting)
 does: Playwright logs into MyCourseVille with a stored username and password. It works, but it
 keeps a Chula password on a server and can lock the account. CEDT Hub will not do this.
+
+**Exception: personal, single-user tools.** A tool that only its owner signs into (for example
+a private dashboard on the owner's own domain) may store **the owner's own** password and log in
+for them, if it:
+
+- encrypts the password at rest (AES-256-GCM or better) with a key kept outside the database;
+- reuses the session cookie and logs in only when that session has expired;
+- makes at most one login attempt per sync and pauses auto-login after a wrong-password
+  response until the owner saves the credentials again (so the account can't get locked);
+- lets the owner delete the stored password at any time.
+
+This exception never covers CEDT Hub or any tool that stores other people's passwords.
+
+## Exception: MyCourseVille with the student's CUNET login (2026-11-27)
+
+No MyCourseVille OAuth client is available, so the owner approved storing the **CUNET password**
+for MCV sync only. Safeguards:
+
+- **Off by default:** only hub accounts whose email is in `MCV_PASSWORD_SYNC_EMAILS` see the form,
+  and they must tick an explicit consent box.
+- **Separate key:** the password is encrypted with `CREDENTIAL_ENCRYPTION_KEY` (AES-256-GCM),
+  never with `BETTER_AUTH_SECRET`. The database alone, or the auth secret alone, cannot reveal it.
+- **Minimal logins:** the MCV session cookie is reused, and the password is used only when that
+  session has expired. After a failed login the hub waits 10 minutes before trying again.
+- **Wrong password:** reported once, then **all logins stop** until the user updates the
+  password, so it can never lock the account.
+- Disconnect deletes the password, the session and all MCV data. Nothing is logged.
+
+**How it works:** plain HTTP, no browser (pattern from
+[ILFforever/Chula_Attendance](https://github.com/ILFforever/Chula_Attendance)):
+
+1. MCV home page.
+2. MCV's own OAuth URL (`client_id=mycourseville.com`, `login_page=itchula`), which shows the
+   CU-SSO form.
+3. POST the CUNET username and password, which yields the session cookies.
+
+Data:
+
+- `POST ?q=courseville/ajax/getactivepanelcontent` returns every pending item of every course.
+- Each course's public page `og:title` gives the code, term and name.
+- Due dates are MCV's relative text ("2 days" → 23:59 Bangkok that day; hours and minutes are
+  exact).
+- An upcoming item that drops off the pending list was handed in, so it is marked done.
+
+The OAuth sync (when a client exists) takes precedence over this for any user who logged in with MCV.
 
 ## Per platform
 

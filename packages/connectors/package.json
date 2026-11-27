@@ -10,7 +10,8 @@
     "./talent": "./src/talent/index.ts",
     "./grader": "./src/grader/index.ts",
     "./intern": "./src/intern/index.ts",
-    "./cedt-idp": "./src/cedt-idp/index.ts"
+    "./cedt-idp": "./src/cedt-idp/index.ts",
+    "./mcv-session": "./src/mcv-session/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -20,5 +21,9 @@
     "@types/node": "^24.19.4",
     "typescript": "^5.9.3",
     "vitest": "5.1.2"
+  },
+  "dependencies": {
+    "fetch-cookie": "3.2.0",
+    "tough-cookie": "6.1.0"
   }
 }

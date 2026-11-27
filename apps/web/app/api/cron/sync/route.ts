@@ -30,7 +30,8 @@ export async function GET(request: Request) {
     intern: empty(),
     talent: (await syncTalent({ force: true })).status,
   };
-  for (const userId of await mcvUserIds()) {
+  const mcvUsers = new Set([...(await mcvUserIds()), ...(await credentialUserIds("mcv"))]);
+  for (const userId of mcvUsers) {
     summary.mcv.users++;
     summary.mcv[(await syncMcv(userId, { force: true })).status]++;
   }

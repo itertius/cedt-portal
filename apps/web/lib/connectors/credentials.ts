@@ -5,18 +5,19 @@ import { decryptSecret, encryptSecret } from "../crypto";
 import { getDb } from "../db";
 
 const { connectorCredential } = schema;
-export type CredentialSource = "grader" | "intern";
+export type CredentialSource = "grader" | "intern" | "mcv";
 
 export async function saveCredential(
   userId: string,
   source: CredentialSource,
   plain: string,
-  meta: { label?: string | null; expiresAt?: Date | null } = {},
+  meta: { label?: string | null; expiresAt?: Date | null; key?: string } = {},
 ) {
   const values = {
     userId,
     source,
-    secret: encryptSecret(plain),
+    // `key` (e.g. CREDENTIAL_ENCRYPTION_KEY for passwords) overrides the default key.
+    secret: encryptSecret(plain, meta.key),
     label: meta.label ?? null,
     expiresAt: meta.expiresAt ?? null,
   };
@@ -46,13 +47,14 @@ export async function getCredential(
   userId: string,
   source: CredentialSource,
   now = new Date(),
+  key?: string,
 ): Promise<Credential | null> {
   const [row] = await getDb()
     .select()
     .from(connectorCredential)
     .where(and(eq(connectorCredential.userId, userId), eq(connectorCredential.source, source)));
   if (!row) return null;
-  const secret = decryptSecret(row.secret);
+  const secret = decryptSecret(row.secret, key);
   if (secret === null) return null;
   return {
     secret,
