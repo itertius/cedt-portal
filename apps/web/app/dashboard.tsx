@@ -1,4 +1,5 @@
 import { PLATFORMS } from "@cedt-hub/connectors";
+import { TALENT_HOME } from "@cedt-hub/connectors/talent";
 import type { getDashboard } from "@/lib/dashboard";
 import { formatDue, relative } from "@/lib/format";
 import { SyncButton, TaskCheckbox } from "./dashboard-client";
@@ -114,6 +115,35 @@ export function Dashboard({ name, data }: { name: string; data: Data }) {
                 ) : (
                   c.title
                 )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="card">
+        <h2>
+          CEDT activities <span className="muted">from Talent Journey</span>
+        </h2>
+        {data.activities.length === 0 ? (
+          <p className="muted">No upcoming activities.</p>
+        ) : (
+          <ul className="tasks">
+            {data.activities.map((a) => (
+              <li key={a.activityId} className="task activity">
+                <span className="tag">TALENT</span>
+                <span className="task-title">
+                  <a href={TALENT_HOME} target="_blank" rel="noreferrer">
+                    {a.name}
+                  </a>
+                  {a.maxParticipants ? (
+                    <span className="muted">
+                      {" "}
+                      · {a.participants ?? 0}/{a.maxParticipants} joined
+                    </span>
+                  ) : null}
+                </span>
+                <span className="due">{formatDue(a.startsAt)}</span>
               </li>
             ))}
           </ul>

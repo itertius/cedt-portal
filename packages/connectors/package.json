@@ -6,7 +6,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./mcv": "./src/mcv/index.ts",
-    "./gcal": "./src/gcal/index.ts"
+    "./gcal": "./src/gcal/index.ts",
+    "./talent": "./src/talent/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

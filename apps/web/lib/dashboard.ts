@@ -2,6 +2,7 @@ import "server-only";
 import { schema } from "@cedt-hub/db";
 import { and, asc, desc, eq, gte, isNull, or } from "@cedt-hub/db/orm";
 import { getDb } from "./db";
+import { upcomingTalentActivities } from "./sync/talent";
 
 const { course, syncState, task } = schema;
 
@@ -32,7 +33,7 @@ export async function getDashboard(userId: string, now = new Date()) {
     completedAt: task.completedAt,
   };
 
-  const [open, done, courses, [sync]] = await Promise.all([
+  const [open, done, courses, [sync], activities] = await Promise.all([
     // Open tasks: overdue up to 30 days back, everything ahead, and undated ones.
     db
       .select(taskFields)
@@ -69,6 +70,7 @@ export async function getDashboard(userId: string, now = new Date()) {
       .select()
       .from(syncState)
       .where(and(eq(syncState.userId, userId), eq(syncState.source, "mcv"))),
+    upcomingTalentActivities(5, now),
   ]);
 
   const latest = courses[0];
@@ -88,6 +90,7 @@ export async function getDashboard(userId: string, now = new Date()) {
     courses: currentCourses,
     term: latest?.year ? { year: latest.year, semester: latest.semester } : null,
     sync: sync ?? null,
+    activities,
   };
 }
 

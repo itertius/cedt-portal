@@ -440,3 +440,15 @@ a {
 .danger-zone {
   margin-top: 1rem;
 }
+
+.cal-item.source-talent {
+  border-left-color: #f4511e;
+}
+
+.swatch.talent {
+  background: #f4511e;
+}
+
+.task.activity {
+  grid-template-columns: auto 1fr auto;
+}

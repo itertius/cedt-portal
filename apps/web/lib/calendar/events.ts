@@ -1,8 +1,10 @@
 import "server-only";
+import { TALENT_HOME } from "@cedt-hub/connectors/talent";
 import { schema } from "@cedt-hub/db";
 import { and, asc, eq, gt, gte, isNotNull, lt } from "@cedt-hub/db/orm";
 import { z } from "zod";
 import { getDb } from "../db";
+import { listTalentActivities } from "../sync/talent";
 import { addDays, isDateKey, localToInstant, startOfDay } from "./time";
 
 const { course, event, task } = schema;
@@ -154,7 +156,7 @@ export interface CalendarItem {
 /** Events overlapping [from, to) plus task deadlines inside it, sorted by start. */
 export async function listCalendar(userId: string, from: Date, to: Date): Promise<CalendarItem[]> {
   const db = getDb();
-  const [events, tasks] = await Promise.all([
+  const [events, tasks, talent] = await Promise.all([
     db
       .select({
         id: event.id,
@@ -191,6 +193,7 @@ export async function listCalendar(userId: string, from: Date, to: Date): Promis
         ),
       )
       .orderBy(asc(task.dueAt)),
+    listTalentActivities(from, to),
   ]);
 
   const items: CalendarItem[] = [
@@ -208,6 +211,23 @@ export async function listCalendar(userId: string, from: Date, to: Date): Promis
       done: t.completedAt !== null,
     })),
   ];
+  for (const a of talent) {
+    items.push({
+      kind: "event",
+      id: `talent-${a.activityId}`,
+      title:
+        a.organization && !a.name.includes(a.organization)
+          ? `${a.name} · ${a.organization}`
+          : a.name,
+      startsAt: a.startsAt,
+      endsAt: a.endsAt,
+      allDay: false,
+      source: "talent",
+      courseCode: null,
+      url: TALENT_HOME,
+      done: false,
+    });
+  }
   return items.sort((a, b) => a.startsAt.getTime() - b.startsAt.getTime());
 }
 

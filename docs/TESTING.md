@@ -37,13 +37,14 @@ automated gate.
 
 ## Current coverage
 
-| Phase              | Spec                        | Covers                                                                                                                                                                                      |
-| ------------------ | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0 Setup            | `phase0-foundation.spec.ts` | health, logged-out home + icon, protected pages redirect, MCV login and logout, cron secret                                                                                                 |
-| 1 MVP aggregator   | `phase1-mcv.spec.ts`        | background MCV sync fills the dashboard (overdue, due soon, undated; current term only), MCV deep links, mark done survives a sync, Sync now, launcher links for all 6 platforms, cron sync |
-| 2 Calendar + Notes | `phase2-calendar.spec.ts`   | MCV deadlines on week view, month navigation, validation message, create/edit/delete in Bangkok time, multi-day all-day events, **form works without JavaScript**                           |
-|                    | `phase2-gcal.spec.ts`       | connect Google (keeps MCV login), pull read-only events, push without duplicates, edits and deletes in both directions, disconnect                                                          |
-|                    | `phase2-notes.spec.ts`      | autosave survives reload, Markdown preview, **XSS: scripts never run, `javascript:` links stripped**, Thai substring search, course filter, pinning, note from an event, delete             |
+| Phase               | Spec                        | Covers                                                                                                                                                                                      |
+| ------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0 Setup             | `phase0-foundation.spec.ts` | health, logged-out home + icon, protected pages redirect, MCV login and logout, cron secret                                                                                                 |
+| 1 MVP aggregator    | `phase1-mcv.spec.ts`        | background MCV sync fills the dashboard (overdue, due soon, undated; current term only), MCV deep links, mark done survives a sync, Sync now, launcher links for all 6 platforms, cron sync |
+| 1.5 More connectors | `phase1_5-talent.spec.ts`   | cron pulls the public Talent Journey feed, dashboard activities card (participants), calendar at Bangkok times linking to Talent Journey, cancelled activity removed                        |
+| 2 Calendar + Notes  | `phase2-calendar.spec.ts`   | MCV deadlines on week view, month navigation, validation message, create/edit/delete in Bangkok time, multi-day all-day events, **form works without JavaScript**                           |
+|                     | `phase2-gcal.spec.ts`       | connect Google (keeps MCV login), pull read-only events, push without duplicates, edits and deletes in both directions, disconnect                                                          |
+|                     | `phase2-notes.spec.ts`      | autosave survives reload, Markdown preview, **XSS: scripts never run, `javascript:` links stripped**, Thai substring search, course filter, pinning, note from an event, delete             |
 
 ## Running the tests
 

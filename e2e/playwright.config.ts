@@ -49,6 +49,12 @@ export default defineConfig({
       env: { MOCK_GOOGLE_PORT: String(E2E.googlePort) },
     },
     {
+      command: "node ../apps/web/scripts/mock-talent.mjs",
+      port: E2E.talentPort,
+      reuseExistingServer: false,
+      env: { MOCK_TALENT_PORT: String(E2E.talentPort) },
+    },
+    {
       command: `./node_modules/.bin/next start -p ${E2E.appPort}`,
       cwd: "../apps/web",
       url: `${E2E.baseURL}/api/health`,
