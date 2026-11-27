@@ -57,6 +57,13 @@
       "when": 1795738554417,
       "tag": "0007_connectors",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1795742809842,
+      "tag": "0008_extension_tokens",
+      "breakpoints": true
     }
   ]
 }

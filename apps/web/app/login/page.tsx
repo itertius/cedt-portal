@@ -23,10 +23,12 @@ function errorMessage(code: string | undefined) {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; next?: string }>;
 }) {
-  if (await getSession()) redirect("/");
-  const { error } = await searchParams;
+  const { error, next: rawNext } = await searchParams;
+  // Only same-site relative paths, never "//evil.com" or "https://…".
+  const next = rawNext && /^\/(?!\/)[^\\]*$/.test(rawNext) ? rawNext : "/";
+  if (await getSession()) redirect(next);
   const google = googleLoginEnabled();
   const anyProvider = mcvEnabled || cedtEnabled || google;
   const ready = authConfigured && anyProvider;
@@ -44,7 +46,7 @@ export default async function LoginPage({
         {cedtEnabled ? (
           <>
             <p>Use your CEDT account, the same one as Talent Journey and the Intern Portal.</p>
-            <CedtSignInButton disabled={!authConfigured} />
+            <CedtSignInButton next={next} disabled={!authConfigured} />
           </>
         ) : null}
         {mcvEnabled ? (
@@ -57,7 +59,7 @@ export default async function LoginPage({
             ) : (
               <p>Use your MyCourseVille account.</p>
             )}
-            <McvSignInButton disabled={!authConfigured} secondary={cedtEnabled} />
+            <McvSignInButton next={next} disabled={!authConfigured} secondary={cedtEnabled} />
           </>
         ) : null}
         {google ? (
@@ -67,7 +69,11 @@ export default async function LoginPage({
                 ? "Invited? You can also use Google."
                 : "CEDT Hub is invite-only for now."}
             </p>
-            <GoogleSignInButton disabled={!authConfigured} secondary={cedtEnabled || mcvEnabled} />
+            <GoogleSignInButton
+              next={next}
+              disabled={!authConfigured}
+              secondary={cedtEnabled || mcvEnabled}
+            />
           </>
         ) : null}
         {!anyProvider ? <McvSignInButton disabled /> : null}
