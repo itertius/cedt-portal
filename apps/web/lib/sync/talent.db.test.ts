@@ -69,11 +69,19 @@ run("Talent Journey sync (database)", () => {
   });
 
   it("is polite: skips while fresh, and reports fetch errors without touching data", async () => {
+    // Pin the clock for every call: the result must not depend on the time of day CI runs.
     await syncTalent({ force: true, fetchImpl: feed([]), now });
-    expect(await talentSyncedAt()).not.toBeNull();
+    expect(await talentSyncedAt()).toEqual(now);
     const spy = feed([]);
-    expect(await syncTalent({ fetchImpl: spy })).toEqual({ status: "skipped", reason: "fresh" });
+    const in59min = new Date(now.getTime() + 59 * 60_000);
+    expect(await syncTalent({ fetchImpl: spy, now: in59min })).toEqual({
+      status: "skipped",
+      reason: "fresh",
+    });
     expect(spy).not.toHaveBeenCalled();
+    const in61min = new Date(now.getTime() + 61 * 60_000);
+    expect(await syncTalent({ fetchImpl: spy, now: in61min })).toMatchObject({ status: "ok" });
+    expect(spy).toHaveBeenCalledTimes(1);
     const down = vi.fn(async () => new Response("", { status: 502 })) as unknown as typeof fetch;
     expect(await syncTalent({ force: true, fetchImpl: down })).toEqual({
       status: "error",
