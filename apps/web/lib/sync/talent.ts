@@ -79,15 +79,17 @@ export async function saveTalentActivities(items: NormalizedTalentActivity[], no
 export async function syncTalent(
   opts: { force?: boolean; fetchImpl?: typeof fetch; now?: Date } = {},
 ): Promise<TalentSyncResult> {
+  // One clock for the freshness check and the save, so callers (and tests) can pin time.
+  const now = opts.now ?? new Date();
   if (!opts.force) {
     const last = await talentSyncedAt();
-    if (last && Date.now() - last.getTime() < TALENT_STALE_AFTER_MS) {
+    if (last && now.getTime() - last.getTime() < TALENT_STALE_AFTER_MS) {
       return { status: "skipped", reason: "fresh" };
     }
   }
   try {
     const items = await fetchTalentActivities(opts.fetchImpl);
-    const removed = await saveTalentActivities(items, opts.now);
+    const removed = await saveTalentActivities(items, now);
     if (removed === null) return { status: "skipped", reason: "running" };
     return { status: "ok", activities: items.length, removed };
   } catch (err) {
