@@ -107,6 +107,7 @@ describe("course titles", () => {
     const t0 = performance.now();
     parseCourseTitle(evil);
     parsePanelHtml(`<div class="cv-item">${"du in ".repeat(20_000)}<strong>${"<".repeat(10)}`);
+    parsePanelHtml(`<div class="cv-item">${'cvui-course-badge">;'.repeat(20_000)}`);
     expect(performance.now() - t0).toBeLessThan(200);
   });
 

@@ -176,7 +176,15 @@ export interface McvPanelItem {
 
 // Every pattern below is linear: no nested or overlapping quantifiers (safe on any HTML).
 const LINK_RE = /\?q=courseville\/worksheet\/(\d+)\/(\d+)/;
-const BADGE_RE = /cvui-course-badge">([^<]+)</;
+/** Text of the course badge, found with indexOf (no regex scan on untrusted HTML). */
+function badgeText(block: string) {
+  const marker = 'cvui-course-badge">';
+  const start = block.indexOf(marker);
+  if (start < 0) return "";
+  const from = start + marker.length;
+  const end = block.indexOf("<", from);
+  return end < 0 ? "" : block.slice(from, end);
+}
 const TITLE_RE = /<strong>([^<]*)<\/strong>/;
 const DUE_RE = /\bdu[a-z]*\sin\s?<strong>([^<]*)<\/strong>/i;
 const stripQuotes = (t: string) => t.replace(/^["“]/, "").replace(/["”]$/, "");
@@ -192,7 +200,7 @@ export function parsePanelHtml(html: string): McvPanelItem[] {
     if (seen.has(itemId)) continue;
     seen.add(itemId);
     out.push({
-      courseCode: decode(BADGE_RE.exec(block)?.[1] ?? "").trim(),
+      courseCode: decode(badgeText(block)).trim(),
       cvCid,
       itemId,
       title: stripQuotes(decode(TITLE_RE.exec(block)?.[1] ?? "").trim()) || "Untitled item",
