@@ -89,6 +89,8 @@ npx -y pnpm@10 --filter @cedt-hub/e2e report   # open the HTML report (traces, s
   hidden `role="alert"` route announcer to every page.
 - Work done in the background (`after()` syncs) is checked with `expect.poll` or `eventually()`.
 - Use unique titles prefixed `PW` so tests in one run never collide.
+- Never mix a fixed fake clock with the real one. If a test pins `now`, pass the same `now` to every
+  call it compares against. Otherwise it passes or fails depending on the time of day CI runs.
 
 ## Manual release checks (before `dev` → `master`)
 
