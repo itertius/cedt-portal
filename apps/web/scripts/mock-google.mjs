@@ -13,12 +13,13 @@ import { createServer } from "node:http";
 
 const PORT = Number(process.env.MOCK_GOOGLE_PORT ?? 4020);
 const SCOPE = "https://www.googleapis.com/auth/calendar.events";
-const USER = {
+const DEFAULT_USER = {
   sub: "g-109876",
   email: "student@example.com",
   email_verified: true,
   name: "Google Student",
 };
+let USER = { ...DEFAULT_USER };
 
 const codes = new Map(); // code -> { challenge }
 const access = new Set();
@@ -175,6 +176,12 @@ createServer(async (req, res) => {
   }
 
   // ---- Test hooks ----
+  // PUT /__test/user sets who signs in next (empty body = the default user).
+  if (path === "/__test/user" && req.method === "PUT") {
+    const body = await readBody(req);
+    USER = body ? { ...DEFAULT_USER, ...JSON.parse(body) } : { ...DEFAULT_USER };
+    return json(res, 200, USER);
+  }
   if (path === "/__test/events" && req.method === "GET")
     return json(res, 200, [...events.values()]);
   if (path === "/__test/events" && req.method === "POST") {

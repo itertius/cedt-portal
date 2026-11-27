@@ -7,6 +7,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { type GenericOAuthConfig, genericOAuth } from "better-auth/plugins/generic-oauth";
 import { headers } from "next/headers";
+import { isEmailAllowed, parseAllowlist } from "./allowlist";
 import { getDb } from "./db";
 import { fetchMcvProfile, MCV_PROVIDER_ID, MCV_URLS } from "./mcv/profile";
 
@@ -23,6 +24,8 @@ export const googleEnabled = Boolean(
 );
 export const GOOGLE_PROVIDER_ID = "google";
 export const CEDT_PROVIDER_ID = "cedt";
+/** "Log in with Google" for invited people only (personal mode until MCV / CEDT clients exist). */
+export const googleLoginEnabled = () => googleEnabled && parseAllowlist().length > 0;
 /** "Log in with CEDT" (CEDT IDP) is on once CEDT issues us a client. */
 export const cedtEnabled = Boolean(
   process.env.CEDT_IDP_CLIENT_ID && process.env.CEDT_IDP_CLIENT_SECRET,
@@ -102,7 +105,8 @@ function oauthProviders(): GenericOAuthConfig[] {
       accessType: "offline",
       prompt: "consent",
       pkce: true,
-      disableSignUp: true,
+      // Sign-up with Google is limited to ALLOWED_EMAILS (enforced in databaseHooks below).
+      // Linking Google to an existing account (for Calendar) is always allowed.
       getUserInfo: async (tokens) =>
         tokens.accessToken ? fetchGoogleProfile(tokens.accessToken) : null,
     });
@@ -126,6 +130,17 @@ function createAuth() {
         allowDifferentEmails: true,
         // Explicit linking from Settings only; these providers prove the account, not the email.
         trustedProviders: [GOOGLE_PROVIDER_ID, CEDT_PROVIDER_ID, MCV_PROVIDER_ID],
+      },
+    },
+    databaseHooks: {
+      user: {
+        create: {
+          // Only invited emails may create an account through Google.
+          before: async (user, ctx) => {
+            const provider = (ctx?.params as { id?: string } | undefined)?.id;
+            if (provider === GOOGLE_PROVIDER_ID && !isEmailAllowed(user.email)) return false;
+          },
+        },
       },
     },
     session: {
