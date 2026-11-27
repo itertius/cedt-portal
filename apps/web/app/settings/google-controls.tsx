@@ -87,3 +87,34 @@ export function GoogleSyncControls() {
     </span>
   );
 }
+
+/** Link another login (e.g. CEDT) to the current account. */
+export function LinkAccountButton({ provider, label }: { provider: string; label: string }) {
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <span className="inline">
+      <button
+        type="button"
+        className="button"
+        disabled={pending}
+        onClick={async () => {
+          setPending(true);
+          setError(null);
+          const { error } = await authClient.linkSocial({ provider, callbackURL: "/settings" });
+          if (error) {
+            setError(error.message ?? "Could not start linking.");
+            setPending(false);
+          }
+        }}
+      >
+        {pending ? "Redirecting…" : label}
+      </button>
+      {error ? (
+        <span className="error" role="alert">
+          {error}
+        </span>
+      ) : null}
+    </span>
+  );
+}

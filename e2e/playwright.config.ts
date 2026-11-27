@@ -67,6 +67,12 @@ export default defineConfig({
       env: { MOCK_INTERN_PORT: String(E2E.internPort) },
     },
     {
+      command: "node ../apps/web/scripts/mock-cedt-idp.mjs",
+      port: E2E.cedtIdpPort,
+      reuseExistingServer: false,
+      env: { MOCK_CEDT_IDP_PORT: String(E2E.cedtIdpPort) },
+    },
+    {
       command: `./node_modules/.bin/next start -p ${E2E.appPort}`,
       cwd: "../apps/web",
       url: `${E2E.baseURL}/api/health`,
