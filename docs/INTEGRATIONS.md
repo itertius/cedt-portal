@@ -134,15 +134,15 @@ keeps a Chula password on a server and can lock the account. CEDT Hub will not d
 
 ## Summary
 
-| Platform                  | Best method                                                 | Rank      | When                                                     |
-| ------------------------- | ----------------------------------------------------------- | --------- | -------------------------------------------------------- |
-| Hub login                 | **CEDT IDP OAuth** (ask for a client)                       | 1         | As soon as the client is granted                         |
-| MyCourseVille             | Official OAuth + public API                                 | 1         | Built                                                    |
-| Talent Journey activities | Public `/api/v2/home/bootstrap`                             | 2         | **Built** (Phase 1.5)                                    |
-| Intern Portal             | Cookie paste → extension → IDP token                        | 3 → 4 → 1 | **Cookie paste built** (Phase 1.5); extension in Phase 4 |
-| Grader                    | `/api/v1` JWT from a one-time login (password never stored) | 3         | **Built** (Phase 1.5)                                    |
-| Nisitez                   | Extension, or ask the developers                            | 4         | Phase 4                                                  |
-| CEDT-ICES                 | Extension                                                   | 4         | Phase 4                                                  |
+| Platform                  | Best method                                                 | Rank      | When                                                                      |
+| ------------------------- | ----------------------------------------------------------- | --------- | ------------------------------------------------------------------------- |
+| Hub login                 | **CEDT IDP OAuth** (ask for a client)                       | 1         | **Built** behind `CEDT_IDP_CLIENT_ID` (Phase 1.5); waiting for the client |
+| MyCourseVille             | Official OAuth + public API                                 | 1         | Built                                                                     |
+| Talent Journey activities | Public `/api/v2/home/bootstrap`                             | 2         | **Built** (Phase 1.5)                                                     |
+| Intern Portal             | Cookie paste → extension → IDP token                        | 3 → 4 → 1 | **Cookie paste built** (Phase 1.5); extension in Phase 4                  |
+| Grader                    | `/api/v1` JWT from a one-time login (password never stored) | 3         | **Built** (Phase 1.5)                                                     |
+| Nisitez                   | Extension, or ask the developers                            | 4         | Phase 4                                                                   |
+| CEDT-ICES                 | Extension                                                   | 4         | Phase 4                                                                   |
 
 ## Emails to send
 

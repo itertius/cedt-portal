@@ -9,7 +9,8 @@
     "./gcal": "./src/gcal/index.ts",
     "./talent": "./src/talent/index.ts",
     "./grader": "./src/grader/index.ts",
-    "./intern": "./src/intern/index.ts"
+    "./intern": "./src/intern/index.ts",
+    "./cedt-idp": "./src/cedt-idp/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

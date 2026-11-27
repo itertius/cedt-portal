@@ -1,14 +1,17 @@
+import { schema } from "@cedt-hub/db";
+import { and, eq } from "@cedt-hub/db/orm";
 import { redirect } from "next/navigation";
 import { Nav } from "@/components/nav";
-import { getSession, googleEnabled } from "@/lib/auth";
+import { CEDT_PROVIDER_ID, cedtEnabled, getSession, googleEnabled } from "@/lib/auth";
 import { credentialInfo } from "@/lib/connectors/credentials";
+import { getDb } from "@/lib/db";
 import { relative } from "@/lib/format";
 import { googleAccountId } from "@/lib/sync/gcal";
 import { graderSummary } from "@/lib/sync/grader";
 import { internshipCount } from "@/lib/sync/intern";
 import { getSyncState } from "@/lib/sync/lock";
 import { ConnectorControls, GraderConnectForm, InternConnectForm } from "./connector-forms";
-import { ConnectGoogleButton, GoogleSyncControls } from "./google-controls";
+import { ConnectGoogleButton, GoogleSyncControls, LinkAccountButton } from "./google-controls";
 
 export const dynamic = "force-dynamic";
 
@@ -35,6 +38,14 @@ export default async function SettingsPage({
     grader ? graderSummary(userId) : null,
     intern ? internshipCount(userId) : 0,
   ]);
+  const [cedtAccount] = cedtEnabled
+    ? await getDb()
+        .select({ id: schema.account.id })
+        .from(schema.account)
+        .where(
+          and(eq(schema.account.userId, userId), eq(schema.account.providerId, CEDT_PROVIDER_ID)),
+        )
+    : [];
   const graderExpired = Boolean(grader?.expiresAt && grader.expiresAt <= new Date());
   const status = (s: typeof mcv) =>
     s?.status === "error"
@@ -63,6 +74,20 @@ export default async function SettingsPage({
         </p>
         {mcv?.status === "error" ? <p className="error">{mcv.lastError}</p> : null}
       </section>
+
+      {cedtEnabled ? (
+        <section className="card" id="cedt">
+          <h2>CEDT account</h2>
+          {cedtAccount ? (
+            <p>Linked. You can log in with CEDT or MyCourseVille; both open this hub.</p>
+          ) : (
+            <div className="stack">
+              <p>Link your CEDT account (CEDT IDP) so you can also log in with it.</p>
+              <LinkAccountButton provider="cedt" label="Link CEDT account" />
+            </div>
+          )}
+        </section>
+      ) : null}
 
       <section className="card" id="google">
         <h2>Google Calendar</h2>

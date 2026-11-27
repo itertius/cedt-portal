@@ -11,13 +11,14 @@ request to `dev` or `master`, and a PR cannot merge unless they pass.
 
 External services are never called in tests. The app talks to local mocks instead:
 
-| Mock           | File                               | Replaces                                                                                                               |
-| -------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| MyCourseVille  | `apps/web/scripts/mock-mcv.mjs`    | OAuth, profile, courses, assignments                                                                                   |
-| Google         | `apps/web/scripts/mock-google.mjs` | OAuth (with PKCE), userinfo, Calendar v3, plus `__test` hooks to simulate edits made in Google                         |
-| Talent Journey | `apps/web/scripts/mock-talent.mjs` | public `/api/v2/home/bootstrap` feed, plus a `__test` hook to replace it                                               |
-| CEDT Grader    | `apps/web/scripts/mock-grader.mjs` | cafe-grader `/api/v1` (JWT login, problems), failed-login throttling, `__test` hooks to expire tokens and count logins |
-| Intern Portal  | `apps/web/scripts/mock-intern.mjs` | sessions with deadlines, paged openings, cookie check, `__test` hooks to expire/restore the session                    |
+| Mock           | File                                 | Replaces                                                                                                               |
+| -------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| MyCourseVille  | `apps/web/scripts/mock-mcv.mjs`      | OAuth, profile, courses, assignments                                                                                   |
+| Google         | `apps/web/scripts/mock-google.mjs`   | OAuth (with PKCE), userinfo, Calendar v3, plus `__test` hooks to simulate edits made in Google                         |
+| Talent Journey | `apps/web/scripts/mock-talent.mjs`   | public `/api/v2/home/bootstrap` feed, plus a `__test` hook to replace it                                               |
+| CEDT Grader    | `apps/web/scripts/mock-grader.mjs`   | cafe-grader `/api/v1` (JWT login, problems), failed-login throttling, `__test` hooks to expire tokens and count logins |
+| Intern Portal  | `apps/web/scripts/mock-intern.mjs`   | sessions with deadlines, paged openings, cookie check, `__test` hooks to expire/restore the session                    |
+| CEDT IDP       | `apps/web/scripts/mock-cedt-idp.mjs` | OAuth authorize/token/profile at the IdP paths, `__test` hook to choose which student logs in                          |
 
 ## Phase gate (Definition of Done)
 
@@ -44,7 +45,8 @@ automated gate.
 | ------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 0 Setup             | `phase0-foundation.spec.ts` | health, logged-out home + icon, protected pages redirect, MCV login and logout, cron secret                                                                                                                                                                                     |
 | 1 MVP aggregator    | `phase1-mcv.spec.ts`        | background MCV sync fills the dashboard (overdue, due soon, undated; current term only), MCV deep links, mark done survives a sync, Sync now, launcher links for all 6 platforms, cron sync                                                                                     |
-| 1.5 More connectors | `phase1_5-grader.spec.ts`   | wrong password shows the grader's error and is not retried, connect syncs problems, dashboard progress + deep links, **password stored in no database column (all text columns checked) and token encrypted**, expired token asks to reconnect, disconnect wipes token and data |
+| 1.5 More connectors | `phase1_5-cedt-idp.spec.ts` | login page puts CEDT first, new student signs up with real name + `@student.chula.ac.th` (unverified), **sign-in rate limit returns 429**, an MCV user links CEDT in Settings and a CEDT-only login then opens the same hub                                                     |
+|                     | `phase1_5-grader.spec.ts`   | wrong password shows the grader's error and is not retried, connect syncs problems, dashboard progress + deep links, **password stored in no database column (all text columns checked) and token encrypted**, expired token asks to reconnect, disconnect wipes token and data |
 |                     | `phase1_5-intern.spec.ts`   | rejected cookie refused, cookie stored encrypted, openings sorted by pay with bookmark/search/working-condition filters and portal links, bookmarks + ranking deadline on the dashboard, expired session asks for a fresh cookie, disconnect wipes everything                   |
 |                     | `phase1_5-talent.spec.ts`   | cron pulls the public Talent Journey feed, dashboard activities card (participants), calendar at Bangkok times linking to Talent Journey, cancelled activity removed                                                                                                            |
 | 2 Calendar + Notes  | `phase2-calendar.spec.ts`   | MCV deadlines on week view, month navigation, validation message, create/edit/delete in Bangkok time, multi-day all-day events, **form works without JavaScript**                                                                                                               |

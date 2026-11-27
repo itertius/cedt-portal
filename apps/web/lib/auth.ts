@@ -1,4 +1,5 @@
 import "server-only";
+import { CEDT_IDP_SCOPES, cedtIdpUrls, fetchCedtProfile } from "@cedt-hub/connectors/cedt-idp";
 import { GOOGLE_CALENDAR_SCOPE, googleUrls } from "@cedt-hub/connectors/gcal";
 import { schema } from "@cedt-hub/db";
 import { betterAuth } from "better-auth";
@@ -21,6 +22,11 @@ export const googleEnabled = Boolean(
   process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
 );
 export const GOOGLE_PROVIDER_ID = "google";
+export const CEDT_PROVIDER_ID = "cedt";
+/** "Log in with CEDT" (CEDT IDP) is on once CEDT issues us a client. */
+export const cedtEnabled = Boolean(
+  process.env.CEDT_IDP_CLIENT_ID && process.env.CEDT_IDP_CLIENT_SECRET,
+);
 
 interface GoogleUserInfo {
   sub?: string;
@@ -66,6 +72,21 @@ function oauthProviders(): GenericOAuthConfig[] {
         tokens.accessToken ? fetchMcvProfile(tokens.accessToken) : null,
     });
   }
+  if (cedtEnabled) {
+    providers.push({
+      providerId: CEDT_PROVIDER_ID,
+      name: "CEDT",
+      clientId: process.env.CEDT_IDP_CLIENT_ID as string,
+      clientSecret: process.env.CEDT_IDP_CLIENT_SECRET as string,
+      authorizationUrl: cedtIdpUrls().authorize,
+      tokenUrl: cedtIdpUrls().token,
+      tokenEndpointAuth: { method: "client_secret_post" },
+      scopes: CEDT_IDP_SCOPES,
+      pkce: false,
+      getUserInfo: async (tokens) =>
+        tokens.accessToken ? fetchCedtProfile(tokens.accessToken) : null,
+    });
+  }
   if (googleEnabled) {
     // Google is only for Calendar sync: it can be linked to an account, never used to create one.
     // A generic provider keeps every endpoint overridable for the local mock.
@@ -103,7 +124,8 @@ function createAuth() {
         enabled: true,
         disableImplicitLinking: true,
         allowDifferentEmails: true,
-        trustedProviders: [GOOGLE_PROVIDER_ID],
+        // Explicit linking from Settings only; these providers prove the account, not the email.
+        trustedProviders: [GOOGLE_PROVIDER_ID, CEDT_PROVIDER_ID, MCV_PROVIDER_ID],
       },
     },
     session: {

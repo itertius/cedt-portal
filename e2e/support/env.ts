@@ -6,6 +6,7 @@ const googlePort = Number(process.env.E2E_GOOGLE_PORT ?? 4320);
 const talentPort = Number(process.env.E2E_TALENT_PORT ?? 4330);
 const graderPort = Number(process.env.E2E_GRADER_PORT ?? 4340);
 const internPort = Number(process.env.E2E_INTERN_PORT ?? 4350);
+const cedtIdpPort = Number(process.env.E2E_CEDT_IDP_PORT ?? 4360);
 const databaseURL = process.env.DATABASE_URL ?? "postgres://cedt@localhost:5433/cedt_hub";
 
 export const E2E = {
@@ -15,12 +16,14 @@ export const E2E = {
   talentPort,
   graderPort,
   internPort,
+  cedtIdpPort,
   baseURL: `http://localhost:${appPort}`,
   mcvURL: `http://localhost:${mcvPort}`,
   googleURL: `http://localhost:${googlePort}`,
   talentURL: `http://localhost:${talentPort}`,
   graderURL: `http://localhost:${graderPort}`,
   internURL: `http://localhost:${internPort}`,
+  cedtIdpURL: `http://localhost:${cedtIdpPort}`,
   databaseURL,
   cronSecret: "e2e-cron-secret",
   storageState: ".auth/student.json",
@@ -38,5 +41,8 @@ export const E2E = {
     TALENT_BASE_URL: `http://localhost:${talentPort}`,
     GRADER_BASE_URL: `http://localhost:${graderPort}`,
     INTERN_BASE_URL: `http://localhost:${internPort}`,
+    CEDT_IDP_BASE_URL: `http://localhost:${cedtIdpPort}`,
+    CEDT_IDP_CLIENT_ID: "e2e-cedt",
+    CEDT_IDP_CLIENT_SECRET: "e2e-cedt",
   } as Record<string, string>,
 };
